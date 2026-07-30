@@ -6,10 +6,17 @@ sync yourself.
 
 **[Download the newest APK](https://github.com/dickofn/sisaldo-app/releases/latest/download/sisaldo.apk)**
 &nbsp;&middot;&nbsp;
-**[Read the guide](https://dickofn.github.io/sisaldo-app/)**
+**[Read the documentation](https://dickofn.github.io/sisaldo-app/)**
 
-The guide covers installing it, setting up your cards and limits, day-to-day
-use, and how the numbers are worked out. Start there rather than here.
+The documentation covers installing it, setting up your cards and limits,
+day-to-day use, how every figure is worked out, backups, and updates. It is
+available in **English and Bahasa Indonesia** (switch with the EN / ID control at
+the top of the page). Start there rather than here.
+
+**Sisaldo works fully offline.** Everything lives in one database file on your
+phone. There is no account, no server, and nothing is uploaded. The only things
+that ever use the network are Google Drive sync, if you choose to connect it, and
+the update check.
 
 ## What it does
 
@@ -22,6 +29,7 @@ use, and how the numbers are worked out. Start there rather than here.
   to is accounted for
 - Exports and imports your whole history as one file, and optionally syncs it to
   a hidden folder in your own Google Drive
+- Works with no connection at all: offline is the normal case, not a fallback
 
 ## Before you install
 

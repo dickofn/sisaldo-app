@@ -1,33 +1,39 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Sisaldo, a spending and credit-card tracker for Android</title>
-<meta name="description" content="Sisaldo tracks spending across credit cards and cash on Android. No account, no backend, no cloud unless you ask for it. Download the APK and read the full guide.">
+<title>Sisaldo documentation</title>
+<meta name="description" content="Full documentation for Sisaldo, a fully offline spending and credit-card tracker for Android. Install guide, setup, daily use, and how every figure is worked out. Available in English and Bahasa Indonesia.">
 <meta name="color-scheme" content="light dark">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 /* ---------------------------------------------------------------------------
-   Sisaldo's own palette and faces, on purpose. Documentation that looks like
-   a different product than the one it documents makes the reader do work for
+   Sisaldo's own palette and faces, on purpose: documentation that looks like a
+   different product than the one it documents makes the reader do work for
    nothing. The four accent colours are the exact ones the demo dataset gives
    its four accounts, so the page is coloured by the same system the app
    colours accounts by.
 
    The one structural device: a dashed border means planned, a solid border
    means recorded. That is not decoration, it is the single rule the whole
-   ledger derives from, and the app's own Ledger already separates pending
-   rows with a dashed divider.
+   ledger derives from, and the app's own Ledger already separates pending rows
+   with a dashed divider.
+
+   Bilingual with no build step: every translatable block appears twice, once
+   with lang="en" and once with lang="id", and CSS hides whichever the reader
+   did not choose. lang attributes are never nested, or a hidden parent would
+   take its visible child with it.
 --------------------------------------------------------------------------- */
 :root {
   --paper: #FAFAF7;
   --paper-raised: #FFFFFF;
+  --paper-sunk: #F2F1EC;
   --ink: #16181D;
-  --ink-soft: #5B616E;
-  --ink-faint: #8A8F99;
+  --ink-soft: #4E545F;
+  --ink-faint: #858A94;
   --rule: #E4E2DC;
 
   --aurora: #4F7CFF;
@@ -35,29 +41,30 @@
   --harbour: #E8A33D;
   --cash: #4BA98B;
   --credit: #1F7A5C;
+  --warn: #B4541C;
 
   --sans: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  --radius: 14px;
-  --measure: 34rem;
-  --gutter: clamp(1.25rem, 5vw, 3rem);
+  --radius: 12px;
+  --measure: 38rem;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --paper: #101216;
     --paper-raised: #181B21;
+    --paper-sunk: #14171C;
     --ink: #F2F1EE;
-    --ink-soft: #A7ACB6;
-    --ink-faint: #767C87;
+    --ink-soft: #B0B6C0;
+    --ink-faint: #7C828D;
     --rule: #2A2E36;
     --credit: #4BC195;
+    --warn: #E0975F;
   }
 }
 
 *, *::before, *::after { box-sizing: border-box; }
-
 html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 
@@ -66,940 +73,1445 @@ body {
   background: var(--paper);
   color: var(--ink);
   font-family: var(--sans);
-  font-size: clamp(1rem, 0.96rem + 0.2vw, 1.0625rem);
-  line-height: 1.6;
+  font-size: 1rem;
+  line-height: 1.65;
   -webkit-font-smoothing: antialiased;
 }
 
-/* Layout ------------------------------------------------------------------ */
+/* Language switching ------------------------------------------------------ */
 
-.wrap {
-  width: 100%;
-  max-width: 68rem;
-  margin-inline: auto;
-  padding-inline: var(--gutter);
+html[data-lang="en"] [lang="id"] { display: none; }
+html[data-lang="id"] [lang="en"] { display: none; }
+
+/* Masthead --------------------------------------------------------------- */
+
+.masthead {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: color-mix(in srgb, var(--paper) 92%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--rule);
 }
-
-.band { padding-block: clamp(3rem, 8vw, 6rem); }
-.band + .band { border-top: 1px solid var(--rule); }
-
-/* Type ------------------------------------------------------------------- */
-
-h1, h2, h3 { line-height: 1.15; letter-spacing: -0.02em; margin: 0; text-wrap: balance; }
-h1 { font-size: clamp(2.1rem, 1.4rem + 3.4vw, 3.6rem); font-weight: 600; }
-h2 { font-size: clamp(1.5rem, 1.2rem + 1.4vw, 2.1rem); font-weight: 600; }
-h3 { font-size: 1.125rem; font-weight: 600; letter-spacing: -0.01em; }
-
-p { margin: 0; }
-p + p { margin-top: 0.9em; }
-
-.prose { max-width: var(--measure); }
-.prose > * + * { margin-top: 0.9em; }
-.prose a { color: inherit; text-decoration-color: var(--ink-faint); text-underline-offset: 0.2em; }
-.prose a:hover { text-decoration-color: currentColor; }
-
-.eyebrow {
+.masthead-in {
+  max-width: 82rem;
+  margin-inline: auto;
+  padding: 0.7rem clamp(1rem, 3vw, 2rem);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.wordmark {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  color: inherit;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+.wordmark .doc {
   font-family: var(--mono);
   font-size: 0.75rem;
-  font-weight: 500;
-  letter-spacing: 0.14em;
+  font-weight: 400;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--ink-faint);
-  margin: 0 0 1.25rem;
 }
+.masthead-spacer { flex: 1 1 auto; }
 
-.lede { font-size: clamp(1.0625rem, 1rem + 0.4vw, 1.25rem); color: var(--ink-soft); }
-.note { font-family: var(--mono); font-size: 0.8125rem; color: var(--ink-faint); line-height: 1.5; }
-.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
-
-/* Hero ------------------------------------------------------------------- */
-
-.hero { padding-block: clamp(3rem, 9vw, 6.5rem) clamp(2.5rem, 7vw, 4.5rem); }
-.hero h1 { max-width: 26ch; }
-.hero .lede { max-width: 46ch; margin-top: 1.25rem; }
-
-.hero-grid { display: grid; gap: clamp(2.5rem, 6vw, 4rem); }
-@media (min-width: 60rem) {
-  .hero-grid { grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); align-items: center; }
+.langs { display: inline-flex; border: 1px solid var(--rule); border-radius: 999px; overflow: hidden; }
+.langs button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--ink-faint);
+  font: 500 0.75rem/1 var(--mono);
+  letter-spacing: 0.06em;
+  padding: 0.5rem 0.7rem;
+  cursor: pointer;
 }
-
-/* Download --------------------------------------------------------------- */
-
-.actions { margin-top: 2rem; display: flex; flex-wrap: wrap; gap: 0.75rem 1rem; align-items: center; }
+.langs button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+.langs button:focus-visible { outline: 2px solid var(--aurora); outline-offset: -2px; }
 
 .btn {
   display: inline-flex;
   align-items: baseline;
-  gap: 0.6rem;
-  padding: 0.85rem 1.4rem;
+  gap: 0.5rem;
+  padding: 0.55rem 1rem;
   border-radius: 999px;
   border: 1px solid var(--ink);
   background: var(--ink);
   color: var(--paper);
-  font: 600 1rem/1 var(--sans);
+  font: 600 0.875rem/1.2 var(--sans);
   text-decoration: none;
-  transition: transform 140ms ease, opacity 140ms ease;
+  white-space: nowrap;
 }
-.btn:hover { transform: translateY(-1px); opacity: 0.92; }
+.btn:hover { opacity: 0.9; }
 .btn:focus-visible { outline: 2px solid var(--aurora); outline-offset: 3px; }
-.btn .btn-sub { font-family: var(--mono); font-size: 0.75rem; font-weight: 400; opacity: 0.7; }
+.btn-sub { font-family: var(--mono); font-size: 0.6875rem; font-weight: 400; opacity: 0.72; }
 
-.btn-quiet { background: transparent; color: var(--ink); border-color: var(--rule); }
-.btn-quiet:hover { border-color: var(--ink-faint); }
+/* Shell: sidebar plus content ------------------------------------------- */
 
-@media (prefers-reduced-motion: reduce) { .btn:hover { transform: none; } }
-
-/* The ledger fragment: the hero object, and the page's thesis ------------- */
-
-.ledger {
-  background: var(--paper-raised);
-  border: 1px solid var(--rule);
-  border-radius: var(--radius);
-  padding: 1.25rem 1.25rem 0.5rem;
-  box-shadow: 0 1px 2px rgb(22 24 29 / 0.04), 0 12px 32px -18px rgb(22 24 29 / 0.18);
+.shell {
+  max-width: 82rem;
+  margin-inline: auto;
+  padding: 0 clamp(1rem, 3vw, 2rem) 5rem;
+  display: grid;
+  gap: 2.5rem;
+}
+@media (min-width: 60rem) {
+  .shell { grid-template-columns: 15rem minmax(0, 1fr); gap: 3.5rem; align-items: start; }
 }
 
-.ledger-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
+/* Table of contents ----------------------------------------------------- */
+
+.toc { padding-top: 2rem; }
+@media (min-width: 60rem) {
+  .toc { position: sticky; top: 4.2rem; max-height: calc(100vh - 6rem); overflow-y: auto; }
+}
+.toc-title {
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin: 0 0 0.75rem;
+}
+.toc ol { list-style: none; margin: 0; padding: 0; font-size: 0.875rem; }
+.toc > ol > li { margin-bottom: 0.15rem; }
+.toc ol ol { margin: 0.15rem 0 0.5rem 0; padding-left: 0; }
+.toc a {
+  display: block;
+  padding: 0.22rem 0.6rem 0.22rem 0.7rem;
+  color: var(--ink-soft);
+  text-decoration: none;
+  border-left: 2px solid var(--rule);
+  border-radius: 0 4px 4px 0;
+}
+.toc a:hover { color: var(--ink); background: var(--paper-sunk); }
+.toc a.here { color: var(--ink); border-left-color: var(--ink); font-weight: 500; }
+.toc ol ol a { padding-left: 1.4rem; font-size: 0.8125rem; }
+.toc-num { font-family: var(--mono); font-size: 0.75rem; color: var(--ink-faint); margin-right: 0.45rem; }
+
+/* On a phone the TOC folds away rather than pushing the content down a screen. */
+.toc-fold > summary {
+  cursor: pointer;
   font-family: var(--mono);
   font-size: 0.75rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--ink-faint);
-  padding-bottom: 0.85rem;
+  padding: 0.6rem 0;
+}
+.toc-fold > summary::marker { color: var(--ink-faint); }
+@media (min-width: 60rem) {
+  .toc-fold > summary { display: none; }
+  .toc-fold { display: block; }
 }
 
-.row {
-  display: grid;
-  grid-template-columns: 5.5rem minmax(0, 1fr) auto;
-  gap: 0.5rem 0.9rem;
-  align-items: center;
-  padding: 0.85rem 0;
-  border-top: 1px solid var(--rule);
-}
-/* The signature: planned rows are dashed, recorded rows are solid. */
-.row.planned { border-top-style: dashed; }
+/* Content --------------------------------------------------------------- */
 
-.row-when { font-family: var(--mono); font-size: 0.8125rem; color: var(--ink-faint); }
+.content { padding-top: 2rem; min-width: 0; }
 
-/* On a narrow phone, a fixed date column squeezes descriptions into two or
-   three cramped lines. Give the date its own line instead. */
-@media (max-width: 28rem) {
-  .row { grid-template-columns: minmax(0, 1fr) auto; }
-  .row-when { grid-column: 1 / -1; }
-}
-.row-what { min-width: 0; }
-.row-desc { display: block; font-size: 0.9375rem; overflow-wrap: break-word; }
-.row-acct { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.8125rem; margin-top: 0.15rem; }
-.dot { width: 0.5rem; height: 0.5rem; border-radius: 50%; flex: none; }
-.dot-aurora { background: var(--aurora); }
-.dot-nimbus { background: var(--nimbus); }
-.dot-harbour { background: var(--harbour); }
-.dot-cash { background: var(--cash); }
-.acct-aurora { color: var(--aurora); }
-.acct-nimbus { color: var(--nimbus); }
-.acct-harbour { color: var(--harbour); }
-.acct-cash { color: var(--cash); }
+h1, h2, h3, h4 { line-height: 1.2; letter-spacing: -0.015em; margin: 0; text-wrap: balance; }
+h1 { font-size: clamp(1.9rem, 1.5rem + 1.6vw, 2.6rem); font-weight: 600; }
+h2 { font-size: clamp(1.35rem, 1.2rem + 0.7vw, 1.7rem); font-weight: 600; }
+h3 { font-size: 1.125rem; font-weight: 600; }
+h4 { font-size: 0.9375rem; font-weight: 600; }
 
-.row-amt { font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 0.9375rem; text-align: right; white-space: nowrap; }
-.row-amt.is-credit { color: var(--credit); }
+p, ul, ol, dl, table { margin: 0; }
 
-.ledger-foot {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  border-top: 1px solid var(--ink);
-  margin-top: 0.35rem;
-  padding: 0.9rem 0;
+.sec { padding-top: 3.5rem; }
+.sec + .sec { margin-top: 0.5rem; }
+.sec > h2 { padding-bottom: 0.9rem; border-bottom: 1px solid var(--rule); margin-bottom: 1.4rem; }
+.sub { padding-top: 2.25rem; }
+.sub > h3 { margin-bottom: 0.7rem; }
+
+.eyebrow {
   font-family: var(--mono);
-  font-size: 0.8125rem;
+  font-size: 0.6875rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
 }
-.ledger-foot span { color: var(--ink-faint); }
-.ledger-foot b { font-weight: 500; font-variant-numeric: tabular-nums; }
+.secnum { font-family: var(--mono); font-weight: 400; color: var(--ink-faint); margin-right: 0.6rem; }
 
-/* Facts ------------------------------------------------------------------ */
+.lede { font-size: 1.0625rem; color: var(--ink-soft); max-width: var(--measure); }
 
-.facts { display: grid; gap: 1.5rem 2.5rem; margin-top: 2.5rem; }
-@media (min-width: 40rem) { .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (min-width: 60rem) { .facts { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.content p, .content ul, .content ol { max-width: var(--measure); color: var(--ink-soft); }
+.content p + p, .content p + ul, .content p + ol, .content ul + p, .content ol + p, .content h3 + p, .content h4 + p, .content p + h4 { margin-top: 0.85em; }
+.content h4 { margin-top: 1.5em; }
+.content strong { color: var(--ink); font-weight: 600; }
+.content a { color: inherit; text-decoration-color: var(--ink-faint); text-underline-offset: 0.2em; }
+.content a:hover { text-decoration-color: currentColor; }
+.content ul, .content ol { padding-left: 1.15rem; }
+.content li + li { margin-top: 0.35em; }
 
-.fact { border-top: 2px solid var(--ink); padding-top: 0.9rem; }
-.fact dt { font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint); }
-.fact dd { margin: 0.4rem 0 0; font-size: 0.9375rem; color: var(--ink-soft); }
+code {
+  font-family: var(--mono);
+  font-size: 0.875em;
+  background: var(--paper-sunk);
+  border: 1px solid var(--rule);
+  border-radius: 5px;
+  padding: 0.08em 0.35em;
+  color: var(--ink);
+}
 
-/* Steps ------------------------------------------------------------------ */
+/* The one thing everybody wants to know, said once, loudly --------------- */
 
-/* Numbered because installing genuinely is a sequence: each step only makes
-   sense after the one above it. */
-.steps { list-style: none; margin: 2.5rem 0 0; padding: 0; display: grid; gap: 1.5rem; counter-reset: step; }
-@media (min-width: 52rem) { .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2rem 2.5rem; } }
+.offline {
+  margin-top: 1.75rem;
+  border: 1px solid var(--credit);
+  border-radius: var(--radius);
+  padding: 1.15rem 1.3rem;
+  background: color-mix(in srgb, var(--credit) 8%, transparent);
+  max-width: 46rem;
+}
+.offline h3 { color: var(--ink); display: flex; align-items: baseline; gap: 0.5rem; }
+.offline p { color: var(--ink-soft); max-width: none; }
+.offline .tick { color: var(--credit); font-family: var(--mono); }
 
-.step { counter-increment: step; border-top: 1px solid var(--rule); padding-top: 1rem; }
-.step::before {
+.callout {
+  margin-top: 1.5rem;
+  border: 1px dashed var(--warn);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.3rem;
+  background: color-mix(in srgb, var(--warn) 7%, transparent);
+  max-width: 46rem;
+}
+.callout.plain { border-style: solid; border-color: var(--rule); background: var(--paper-raised); }
+.callout h4 { margin-top: 0; margin-bottom: 0.35rem; }
+.callout p { max-width: none; font-size: 0.9375rem; }
+
+/* Steps ----------------------------------------------------------------- */
+
+.steps { list-style: none; margin-top: 1.5rem; padding: 0; counter-reset: step; max-width: 46rem; }
+.steps > li { counter-increment: step; border-top: 1px solid var(--rule); padding: 1rem 0 0 2.6rem; position: relative; }
+.steps > li + li { margin-top: 1rem; }
+.steps > li::before {
   content: counter(step, decimal-leading-zero);
-  display: block;
+  position: absolute;
+  left: 0;
+  top: 1rem;
   font-family: var(--mono);
   font-size: 0.75rem;
   font-weight: 500;
-  letter-spacing: 0.1em;
   color: var(--ink-faint);
-  margin-bottom: 0.5rem;
 }
-.step h3 { margin-bottom: 0.35rem; }
-.step p { font-size: 0.9375rem; color: var(--ink-soft); }
+.steps h4 { margin: 0 0 0.25rem; }
+.steps p { font-size: 0.9375rem; max-width: none; }
 
-.callout {
-  margin-top: 2.5rem;
-  border: 1px dashed var(--harbour);
-  border-radius: var(--radius);
-  padding: 1.25rem 1.4rem;
-  background: color-mix(in srgb, var(--harbour) 7%, transparent);
-  max-width: 46rem;
-}
-.callout h3 { margin-bottom: 0.4rem; }
-.callout p { font-size: 0.9375rem; color: var(--ink-soft); }
+/* Screenshots ----------------------------------------------------------- */
 
-/* Guide: alternating screenshot and prose -------------------------------- */
-
-.guide { display: grid; gap: clamp(3rem, 8vw, 5.5rem); margin-top: 3rem; }
-
-.shot-pair { display: grid; gap: clamp(1.5rem, 4vw, 3rem); align-items: center; }
-@media (min-width: 56rem) {
-  .shot-pair { grid-template-columns: minmax(0, 15rem) minmax(0, 1fr); }
-  /* Alternating sides needs the COLUMN WIDTHS swapped as well as the order.
-     Reordering alone moves the phone into the wide column and squeezes the
-     prose into the 15rem one. */
-  .shot-pair.flip { grid-template-columns: minmax(0, 1fr) minmax(0, 15rem); }
-  .shot-pair.flip > .shot-figure { order: 2; }
-}
-
-.shot-figure { margin: 0; }
-.shot-figure img {
+figure.shot { margin: 1.75rem 0 0; max-width: 46rem; }
+figure.shot img {
   display: block;
   width: 100%;
+  max-width: 17rem;
   height: auto;
   border: 1px solid var(--rule);
-  border-radius: 20px;
+  border-radius: 18px;
   background: var(--paper-raised);
 }
-.shot-figure figcaption { margin-top: 0.7rem; font-family: var(--mono); font-size: 0.75rem; color: var(--ink-faint); }
+figure.shot figcaption { margin-top: 0.6rem; font-family: var(--mono); font-size: 0.75rem; color: var(--ink-faint); }
 
-.shot-body h3 { font-size: clamp(1.1875rem, 1.1rem + 0.5vw, 1.4375rem); margin-bottom: 0.6rem; }
-.shot-body p { color: var(--ink-soft); }
-.shot-body > * + * { margin-top: 0.9em; }
-.shot-body ul { margin: 0.9em 0 0; padding-left: 1.1rem; color: var(--ink-soft); }
-.shot-body li + li { margin-top: 0.4em; }
+.shot-row { display: flex; flex-wrap: wrap; gap: 1.25rem; margin: 1.75rem 0 0; }
+.shot-row figure.shot { margin: 0; flex: 0 1 15rem; }
+.shot-row figure.shot img { max-width: 100%; }
 
-/* Two screenshots side by side, for steps that need a before and after. */
-.shot-duo { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+/* Tables ---------------------------------------------------------------- */
 
-/* The dated / undated diagram: the concepts section's centrepiece --------- */
+.tablewrap { margin-top: 1.5rem; overflow-x: auto; max-width: 46rem; border: 1px solid var(--rule); border-radius: var(--radius); }
+table { border-collapse: collapse; width: 100%; font-size: 0.875rem; }
+th, td { text-align: left; padding: 0.7rem 0.9rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
+thead th { font-family: var(--mono); font-size: 0.6875rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint); font-weight: 500; background: var(--paper-sunk); }
+tbody tr:last-child td { border-bottom: 0; }
+td code { white-space: nowrap; }
 
-.split { margin-top: 2.5rem; display: grid; gap: 1.25rem; max-width: 46rem; }
+/* The dated / undated split -------------------------------------------- */
+
+.split { margin-top: 1.75rem; display: grid; gap: 1.1rem; max-width: 46rem; }
 @media (min-width: 44rem) { .split { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-
-.split-card { border: 1px solid var(--ink); border-radius: var(--radius); padding: 1.25rem 1.35rem; background: var(--paper-raised); }
+.split-card { border: 1px solid var(--ink); border-radius: var(--radius); padding: 1.1rem 1.2rem; background: var(--paper-raised); }
 .split-card.is-planned { border-style: dashed; }
-.split-tag { font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint); }
-.split-card h3 { margin: 0.5rem 0 0.6rem; }
-.split-card p { font-size: 0.9375rem; color: var(--ink-soft); }
-
-.feeds { list-style: none; margin: 1rem 0 0; padding: 0.9rem 0 0; border-top: 1px solid var(--rule); display: grid; gap: 0.45rem; }
-.feeds li { display: flex; gap: 0.6rem; align-items: baseline; font-family: var(--mono); font-size: 0.8125rem; }
+.split-card .eyebrow { display: block; margin-bottom: 0.4rem; }
+.split-card h4 { margin: 0 0 0.4rem; }
+.split-card p { font-size: 0.9375rem; max-width: none; }
+.feeds { list-style: none; margin: 0.9rem 0 0; padding: 0.8rem 0 0; border-top: 1px solid var(--rule); display: grid; gap: 0.4rem; }
+.feeds li { display: grid; grid-template-columns: 5.2rem minmax(0, 1fr); gap: 0.6rem; align-items: baseline; font-size: 0.8125rem; margin: 0; }
+.feeds b { font-family: var(--mono); font-weight: 500; font-size: 0.75rem; }
 .feeds .yes { color: var(--credit); }
 .feeds .no { color: var(--ink-faint); }
-.feeds span:last-child { font-family: var(--sans); color: var(--ink-soft); }
 
-/* Update paths ----------------------------------------------------------- */
+/* Footer ---------------------------------------------------------------- */
 
-.paths { display: grid; gap: 1.25rem; margin-top: 2.5rem; max-width: 52rem; }
-@media (min-width: 46rem) { .paths { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-
-.path { border: 1px solid var(--rule); border-radius: var(--radius); padding: 1.35rem; background: var(--paper-raised); }
-.path .eyebrow { margin-bottom: 0.6rem; }
-.path h3 { margin-bottom: 0.5rem; }
-.path p { font-size: 0.9375rem; color: var(--ink-soft); }
-.path dl { margin: 1rem 0 0; padding-top: 0.9rem; border-top: 1px solid var(--rule); display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0.4rem 0.9rem; font-size: 0.8125rem; }
-.path dt { font-family: var(--mono); color: var(--ink-faint); }
-.path dd { margin: 0; color: var(--ink-soft); }
-
-/* Footer ----------------------------------------------------------------- */
-
-.foot { padding-block: clamp(2.5rem, 6vw, 4rem); border-top: 1px solid var(--rule); }
-.foot p { font-size: 0.875rem; color: var(--ink-faint); max-width: 44rem; }
-.foot p + p { margin-top: 0.8em; }
-.foot a { color: var(--ink-soft); text-decoration-color: var(--rule); text-underline-offset: 0.2em; }
-.foot a:hover { color: var(--ink); text-decoration-color: currentColor; }
-
-/* Reveal on scroll, quietly, and never at the cost of readability --------- */
-
-/* Scoped to .js-reveal, which is set by an inline script in <head> ONLY when
-   that script has already confirmed it can undo it. Hiding content behind a
-   script that might not run is how a styling flourish turns into a blank
-   page. */
-@media (prefers-reduced-motion: no-preference) {
-  .js-reveal .reveal { opacity: 0; transform: translateY(12px); transition: opacity 520ms ease, transform 520ms ease; }
-  .js-reveal .reveal.seen { opacity: 1; transform: none; }
-}
+.foot { border-top: 1px solid var(--rule); margin-top: 4rem; padding-top: 2rem; }
+.foot p { font-size: 0.875rem; color: var(--ink-faint); max-width: 46rem; }
+.foot p + p { margin-top: 0.7em; }
+.foot a { color: var(--ink-soft); }
 </style>
 <script>
-// Opt in to the scroll reveal only when it can definitely be undone: the
-// observer exists and the reader has not asked for reduced motion. Everything
-// stays visible otherwise, including with JavaScript off entirely.
-if ('IntersectionObserver' in window && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-  document.documentElement.classList.add('js-reveal');
-}
+// Runs before first paint so the page never flashes the wrong language.
+// Explicit choice wins; otherwise follow the browser; otherwise English.
+(function () {
+  var saved = null;
+  try { saved = localStorage.getItem('sisaldo-lang'); } catch (e) {}
+  var nav = (navigator.language || 'en').toLowerCase();
+  var lang = saved || (nav.indexOf('id') === 0 ? 'id' : 'en');
+  document.documentElement.setAttribute('data-lang', lang);
+  document.documentElement.setAttribute('lang', lang);
+})();
 </script>
 </head>
 <body>
 
-<header class="hero wrap">
-  <div class="hero-grid">
-    <div>
-      <p class="eyebrow">Sisaldo &middot; Android</p>
-      <h1>Know what you have actually got left, not what your statement says.</h1>
-      <p class="lede">
-        A spending and credit-card tracker that keeps every figure on your own phone.
-        No account to make, no server to trust, and no cloud at all unless you switch
-        it on. It replaced three spreadsheets, so it is built around the one thing
-        those got wrong.
-      </p>
-      <div class="actions">
-        <a class="btn" href="https://github.com/dickofn/sisaldo-app/releases/latest/download/sisaldo.apk">
-          Download the APK
-          <span class="btn-sub">Android</span>
-        </a>
-        <a class="btn btn-quiet" href="#install">How to install</a>
-      </div>
-      <p class="note" style="margin-top:1.1rem">
-        Always resolves to the newest release. Sideloaded, not from the Play Store.
-      </p>
+<header class="masthead">
+  <div class="masthead-in">
+    <a class="wordmark" href="#top">Sisaldo <span class="doc" lang="en">Docs</span><span class="doc" lang="id">Panduan</span></a>
+    <span class="masthead-spacer"></span>
+    <div class="langs" role="group" aria-label="Language / Bahasa">
+      <button type="button" data-set-lang="en" aria-pressed="true">EN</button>
+      <button type="button" data-set-lang="id" aria-pressed="false">ID</button>
     </div>
-
-    <!-- The hero object is a real ledger fragment rather than a picture of one:
-         it is the product's central idea, and it stays crisp at any size. -->
-    <div class="ledger" aria-label="An example of the Ledger, showing two planned entries above three recorded ones">
-      <div class="ledger-head">
-        <span>Ledger</span>
-        <span>July 2026</span>
-      </div>
-      <div class="row planned">
-        <span class="row-when">Pending</span>
-        <span class="row-what">
-          <span class="row-desc">Tiket Bus Antar Kota</span>
-          <span class="row-acct acct-aurora"><span class="dot dot-aurora"></span>Aurora Visa</span>
-        </span>
-        <span class="row-amt">Rp 480.000</span>
-      </div>
-      <div class="row planned">
-        <span class="row-when">Pending</span>
-        <span class="row-what">
-          <span class="row-desc">Servis AC tahunan</span>
-          <span class="row-acct acct-nimbus"><span class="dot dot-nimbus"></span>Nimbus Mastercard</span>
-        </span>
-        <span class="row-amt">Rp 650.000</span>
-      </div>
-      <div class="row">
-        <span class="row-when">2026-07-26</span>
-        <span class="row-what">
-          <span class="row-desc">Bayar tagihan Harbour</span>
-          <span class="row-acct acct-harbour"><span class="dot dot-harbour"></span>Harbour Platinum</span>
-        </span>
-        <span class="row-amt is-credit">&minus;Rp 3.000.000</span>
-      </div>
-      <div class="row">
-        <span class="row-when">2026-07-24</span>
-        <span class="row-what">
-          <span class="row-desc">Swalayan Kirana</span>
-          <span class="row-acct acct-nimbus"><span class="dot dot-nimbus"></span>Nimbus Mastercard</span>
-        </span>
-        <span class="row-amt">Rp 188.000</span>
-      </div>
-      <div class="row">
-        <span class="row-when">2026-07-21</span>
-        <span class="row-what">
-          <span class="row-desc">Iuran RT (Bagas)</span>
-          <span class="row-acct acct-cash"><span class="dot dot-cash"></span>Cash</span>
-        </span>
-        <span class="row-amt">Rp 150.000</span>
-      </div>
-      <div class="ledger-foot">
-        <span>Debit <b>Rp 13.141.000</b></span>
-        <span>Credit <b>Rp 3.445.000</b></span>
-      </div>
-    </div>
+    <a class="btn" href="https://github.com/dickofn/sisaldo-app/releases/latest/download/sisaldo.apk">
+      <span lang="en">Download APK</span><span lang="id">Unduh APK</span>
+      <span class="btn-sub">Android</span>
+    </a>
   </div>
 </header>
 
-<section class="band wrap reveal">
-  <p class="eyebrow">What it is</p>
-  <h2>Three credit cards, a wallet, and one honest number at the bottom.</h2>
-  <div class="prose" style="margin-top:1.25rem">
-    <p>
-      Sisaldo tracks what you spend across credit cards and cash, works out what each
-      card really owes, how much room is left on it, and how much money you actually
-      have free once everything you have committed to is taken off. It handles shared
-      credit limits across several cards, and it tracks progress toward the perks a
-      card gives you for using it a certain number of times a month.
+<div class="shell" id="top">
+
+  <!-- Table of contents ------------------------------------------------- -->
+  <nav class="toc" aria-label="Contents">
+    <details class="toc-fold" open>
+      <summary><span lang="en">Contents</span><span lang="id">Isi</span></summary>
+      <p class="toc-title" lang="en">Contents</p>
+      <p class="toc-title" lang="id">Isi</p>
+      <ol>
+        <li><a href="#what"><span class="toc-num">1</span><span lang="en">What Sisaldo is</span><span lang="id">Apa itu Sisaldo</span></a></li>
+        <li><a href="#offline"><span class="toc-num">2</span><span lang="en">Offline, data and privacy</span><span lang="id">Offline, data, dan privasi</span></a></li>
+        <li><a href="#install"><span class="toc-num">3</span><span lang="en">Installing</span><span lang="id">Memasang</span></a></li>
+        <li>
+          <a href="#setup"><span class="toc-num">4</span><span lang="en">Setting up</span><span lang="id">Menyiapkan</span></a>
+          <ol>
+            <li><a href="#setup-accounts"><span lang="en">Accounts and cards</span><span lang="id">Akun dan kartu</span></a></li>
+            <li><a href="#setup-groups"><span lang="en">Shared limits</span><span lang="id">Limit bersama</span></a></li>
+            <li><a href="#setup-rules"><span lang="en">Bonus rules</span><span lang="id">Aturan bonus</span></a></li>
+            <li><a href="#setup-money"><span lang="en">Current money</span><span lang="id">Uang saat ini</span></a></li>
+          </ol>
+        </li>
+        <li>
+          <a href="#daily"><span class="toc-num">5</span><span lang="en">Daily use</span><span lang="id">Penggunaan harian</span></a>
+          <ol>
+            <li><a href="#daily-dashboard"><span lang="en">The Dashboard</span><span lang="id">Dashboard</span></a></li>
+            <li><a href="#daily-add"><span lang="en">Adding an entry</span><span lang="id">Menambah entri</span></a></li>
+            <li><a href="#daily-kinds"><span lang="en">Entry kinds</span><span lang="id">Jenis entri</span></a></li>
+            <li><a href="#daily-edit"><span lang="en">Editing</span><span lang="id">Mengubah</span></a></li>
+            <li><a href="#daily-ledger"><span lang="en">The Ledger</span><span lang="id">Ledger</span></a></li>
+            <li><a href="#daily-cards"><span lang="en">Cards and payees</span><span lang="id">Kartu dan penerima</span></a></li>
+          </ol>
+        </li>
+        <li>
+          <a href="#numbers"><span class="toc-num">6</span><span lang="en">How the numbers work</span><span lang="id">Cara angkanya dihitung</span></a>
+          <ol>
+            <li><a href="#numbers-dated"><span lang="en">Dated and undated</span><span lang="id">Bertanggal dan tanpa tanggal</span></a></li>
+            <li><a href="#numbers-avail"><span lang="en">Availability vs owed</span><span lang="id">Tersedia vs tagihan</span></a></li>
+            <li><a href="#numbers-cash"><span lang="en">Why cash moves nothing</span><span lang="id">Kenapa tunai tidak mengubah apa pun</span></a></li>
+            <li><a href="#numbers-admin"><span lang="en">Administration entries</span><span lang="id">Entri biaya administrasi</span></a></li>
+            <li><a href="#numbers-stored"><span lang="en">Nothing is stored as a total</span><span lang="id">Tidak ada total yang disimpan</span></a></li>
+          </ol>
+        </li>
+        <li><a href="#backup"><span class="toc-num">7</span><span lang="en">Backup and sync</span><span lang="id">Pencadangan dan sinkronisasi</span></a></li>
+        <li><a href="#updates"><span class="toc-num">8</span><span lang="en">Updates</span><span lang="id">Pembaruan</span></a></li>
+        <li><a href="#trouble"><span class="toc-num">9</span><span lang="en">Troubleshooting</span><span lang="id">Pemecahan masalah</span></a></li>
+      </ol>
+    </details>
+  </nav>
+
+  <!-- Content ----------------------------------------------------------- -->
+  <main class="content">
+
+    <p class="eyebrow" lang="en">Documentation</p>
+    <p class="eyebrow" lang="id">Dokumentasi</p>
+    <h1 lang="en">Sisaldo</h1>
+    <h1 lang="id">Sisaldo</h1>
+    <p class="lede" lang="en" style="margin-top:0.9rem">
+      A spending and credit-card tracker for Android. It works out what each card owes,
+      how much room is left on it, and how much money you genuinely have free once
+      everything you have committed to is counted. This page documents all of it.
     </p>
-    <p>
-      It is a personal tool, published so its owner's own devices can update
-      themselves. You are welcome to use it. Nobody is supporting it.
+    <p class="lede" lang="id" style="margin-top:0.9rem">
+      Pencatat pengeluaran dan kartu kredit untuk Android. Aplikasi ini menghitung
+      tagihan tiap kartu, sisa limit yang masih bisa dipakai, dan berapa uang yang
+      benar-benar bebas dipakai setelah semua yang sudah Anda rencanakan ikut dihitung.
+      Halaman ini mendokumentasikan semuanya.
     </p>
-  </div>
 
-  <dl class="facts">
-    <div class="fact">
-      <dt>Storage</dt>
-      <dd>One SQLite file on your device. Nothing is sent anywhere by default.</dd>
-    </div>
-    <div class="fact">
-      <dt>Accounts</dt>
-      <dd>None. There is no sign-up, and no server that knows you exist.</dd>
-    </div>
-    <div class="fact">
-      <dt>Currency</dt>
-      <dd>Indonesian rupiah, with a per-entry rate for anything foreign.</dd>
-    </div>
-    <div class="fact">
-      <dt>Platform</dt>
-      <dd>Android, sideloaded. Portrait, landscape, and unfolded foldables.</dd>
-    </div>
-  </dl>
-</section>
-
-<section class="band wrap reveal" id="install">
-  <p class="eyebrow">Install</p>
-  <h2>Four steps, and one warning you should read first.</h2>
-
-  <ol class="steps">
-    <li class="step">
-      <h3>Download the APK</h3>
-      <p>
-        Use the button at the top of this page, on the phone itself. It always points
-        at the newest release, so there is no version to pick.
+    <div class="offline">
+      <h3 lang="en"><span class="tick">&check;</span> Sisaldo works fully offline</h3>
+      <h3 lang="id"><span class="tick">&check;</span> Sisaldo bekerja sepenuhnya offline</h3>
+      <p lang="en">
+        Everything lives in a single database file on your phone. There is no account to
+        create, no server that holds your data, and nothing is uploaded anywhere. Put the
+        phone in aeroplane mode and every feature still works. The only times Sisaldo
+        touches the internet at all are if <em>you</em> turn on Google Drive sync, or when
+        it checks for an update. Both are optional, and both are described below.
       </p>
-    </li>
-    <li class="step">
-      <h3>Allow the install</h3>
-      <p>
-        Android will ask whether your browser may install unknown apps. Approve it for
-        that one app. This is the normal sideloading prompt, not a sign anything is
-        wrong.
+      <p lang="id">
+        Semua data ada di satu berkas basis data di ponsel Anda. Tidak ada akun yang perlu
+        dibuat, tidak ada server yang menyimpan data Anda, dan tidak ada apa pun yang
+        diunggah ke mana pun. Aktifkan mode pesawat dan semua fitur tetap berjalan.
+        Sisaldo hanya menyentuh internet kalau <em>Anda</em> menyalakan sinkronisasi Google
+        Drive, atau saat memeriksa pembaruan. Keduanya opsional dan dijelaskan di bawah.
       </p>
-    </li>
-    <li class="step">
-      <h3>Tap through Play Protect</h3>
-      <p>
-        You will see a warning about an unrecognised developer. See the note below for
-        exactly why, then choose to install anyway.
+    </div>
+
+    <!-- 1 ------------------------------------------------------------------ -->
+    <section class="sec" id="what">
+      <h2><span class="secnum">1</span><span lang="en">What Sisaldo is</span><span lang="id">Apa itu Sisaldo</span></h2>
+
+      <p lang="en">
+        Sisaldo replaced three spreadsheets that did this job by hand. It is built around
+        the thing those got wrong, which is the difference between a charge that has
+        happened and one you have merely committed to.
       </p>
-    </li>
-    <li class="step">
-      <h3>Open it</h3>
-      <p>
-        The app starts genuinely empty: no accounts, no cards, no sample data. The next
-        section walks through setting it up.
+      <p lang="id">
+        Sisaldo menggantikan tiga berkas spreadsheet yang dulu dikerjakan manual. Aplikasi
+        ini dibangun di sekitar hal yang salah di spreadsheet itu: beda antara transaksi
+        yang sudah benar-benar terjadi dan yang baru Anda rencanakan.
       </p>
-    </li>
-  </ol>
 
-  <div class="callout">
-    <h3>Why Android warns about this app</h3>
-    <p>
-      The APK is signed with a debug key rather than a distribution key. That is
-      deliberate, not an oversight: the key's fingerprint is what the Google sign-in
-      client used for Drive sync is registered against, and changing it would break
-      that. The practical consequence is that Android cannot recognise the publisher,
-      so it warns. If that trade is not one you want to accept, do not install it.
-    </p>
-  </div>
-</section>
+      <h4 lang="en">It does</h4>
+      <h4 lang="id">Yang bisa dilakukan</h4>
+      <ul lang="en">
+        <li>Track spending across any number of credit cards and cash accounts</li>
+        <li>Work out what each card owes, and how much of its limit is still free</li>
+        <li>Handle several cards that share one credit limit between them</li>
+        <li>Track progress toward a card's perk, by usage count or by spend threshold</li>
+        <li>Record money you paid on someone else's behalf, and who owes it back</li>
+        <li>Handle purchases in another currency, at the rate you were charged</li>
+        <li>Export and import your whole history as one file</li>
+      </ul>
+      <ul lang="id">
+        <li>Mencatat pengeluaran dari berapa pun jumlah kartu kredit dan akun tunai</li>
+        <li>Menghitung tagihan tiap kartu dan sisa limit yang masih bebas</li>
+        <li>Menangani beberapa kartu yang berbagi satu limit kredit</li>
+        <li>Melacak progres menuju perk kartu, lewat jumlah transaksi atau ambang belanja</li>
+        <li>Mencatat uang yang Anda bayarkan untuk orang lain, dan siapa yang harus mengembalikan</li>
+        <li>Menangani pembelian mata uang lain, dengan kurs yang dikenakan ke Anda</li>
+        <li>Mengekspor dan mengimpor seluruh riwayat sebagai satu berkas</li>
+      </ul>
 
-<section class="band wrap reveal">
-  <p class="eyebrow">Set it up</p>
-  <h2>Everything on the Dashboard is built from what you enter here.</h2>
-  <p class="lede prose" style="margin-top:1rem">
-    Sisaldo ships with nothing configured, because the numbers are only worth anything
-    if the cards and limits behind them are yours.
-  </p>
+      <h4 lang="en">It does not</h4>
+      <h4 lang="id">Yang tidak dilakukan</h4>
+      <ul lang="en">
+        <li>Connect to your bank. Every entry is typed in by you.</li>
+        <li>Sync automatically between phones, unless you turn on Drive sync</li>
+        <li>Run on iOS or in a browser. Android only, for now.</li>
+      </ul>
+      <ul lang="id">
+        <li>Terhubung ke bank Anda. Setiap entri Anda masukkan sendiri.</li>
+        <li>Menyinkronkan otomatis antar ponsel, kecuali Anda menyalakan sinkronisasi Drive</li>
+        <li>Berjalan di iOS atau di browser. Baru Android untuk sekarang.</li>
+      </ul>
 
-  <div class="guide">
-
-    <div class="shot-pair">
-      <figure class="shot-figure">
-        <img src="screenshots/01-first-launch.png" alt="Sisaldo on first launch, showing a Get started card and an Add an account button" width="1080" height="2092" loading="lazy" decoding="async">
-        <figcaption>First launch</figcaption>
-      </figure>
-      <div class="shot-body">
-        <h3>Start with one account</h3>
-        <p>
-          A fresh install has no accounts at all, so the Dashboard has nothing to show
-          and says so. Tap <strong>Add an account</strong> to begin. An account is
-          either a credit card or cash, and you can have as many of each as you like.
+      <div class="callout plain">
+        <h4 lang="en">The app's own screens are in English</h4>
+        <h4 lang="id">Tampilan aplikasinya berbahasa Inggris</h4>
+        <p lang="en">
+          This documentation is available in Bahasa Indonesia, but the app itself is not
+          translated yet. Where this guide names a button, it gives the English label you
+          will actually see on screen.
+        </p>
+        <p lang="id">
+          Dokumentasi ini tersedia dalam Bahasa Indonesia, tetapi aplikasinya sendiri belum
+          diterjemahkan. Setiap kali panduan ini menyebut sebuah tombol, yang dipakai adalah
+          label bahasa Inggris yang benar-benar muncul di layar.
         </p>
       </div>
-    </div>
+    </section>
 
-    <div class="shot-pair flip">
-      <figure class="shot-figure">
-        <img src="screenshots/15-account-editor.png" alt="The new account form, with fields for name, kind, limit, limit group and colour" width="1080" height="2092" loading="lazy" decoding="async">
-        <figcaption>Adding a card</figcaption>
-      </figure>
-      <div class="shot-body">
-        <h3>Name it, set its limit, give it a colour</h3>
-        <p>
-          A credit card needs a limit; cash does not have one. The colour is not
-          decoration: it tags that account everywhere it appears, so a glance at the
-          Ledger tells you which card a row belongs to without reading the name.
+    <!-- 2 ------------------------------------------------------------------ -->
+    <section class="sec" id="offline">
+      <h2><span class="secnum">2</span><span lang="en">Offline, data and privacy</span><span lang="id">Offline, data, dan privasi</span></h2>
+
+      <p lang="en">
+        This section exists because it is the first thing anyone sensibly asks of a money
+        app. The short answer is at the top of this page; here is the detail.
+      </p>
+      <p lang="id">
+        Bagian ini ada karena inilah hal pertama yang wajar ditanyakan orang tentang aplikasi
+        keuangan. Jawaban singkatnya ada di bagian atas halaman ini; berikut rinciannya.
+      </p>
+
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr>
+              <th><span lang="en">Question</span><span lang="id">Pertanyaan</span></th>
+              <th><span lang="en">Answer</span><span lang="id">Jawaban</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span lang="en">Where is my data kept?</span><span lang="id">Di mana data saya disimpan?</span></td>
+              <td><span lang="en">One SQLite file in the app's private storage on your phone.</span><span lang="id">Satu berkas SQLite di penyimpanan privat aplikasi di ponsel Anda.</span></td>
+            </tr>
+            <tr>
+              <td><span lang="en">Do I need an account?</span><span lang="id">Perlu bikin akun?</span></td>
+              <td><span lang="en">No. There is no sign-up and no server that knows you exist.</span><span lang="id">Tidak. Tidak ada pendaftaran dan tidak ada server yang tahu Anda ada.</span></td>
+            </tr>
+            <tr>
+              <td><span lang="en">Does it work with no signal?</span><span lang="id">Bisa jalan tanpa sinyal?</span></td>
+              <td><span lang="en">Yes, completely. Nothing needs a connection.</span><span lang="id">Ya, sepenuhnya. Tidak ada yang butuh koneksi.</span></td>
+            </tr>
+            <tr>
+              <td><span lang="en">What can reach the internet?</span><span lang="id">Apa yang bisa mengakses internet?</span></td>
+              <td><span lang="en">Only Drive sync (if you connect it) and the update check.</span><span lang="id">Hanya sinkronisasi Drive (kalau Anda hubungkan) dan pemeriksaan pembaruan.</span></td>
+            </tr>
+            <tr>
+              <td><span lang="en">Any analytics or tracking?</span><span lang="id">Ada analitik atau pelacakan?</span></td>
+              <td><span lang="en">None.</span><span lang="id">Tidak ada.</span></td>
+            </tr>
+            <tr>
+              <td><span lang="en">Are there ads?</span><span lang="id">Ada iklan?</span></td>
+              <td><span lang="en">None.</span><span lang="id">Tidak ada.</span></td>
+            </tr>
+            <tr>
+              <td><span lang="en">If I uninstall?</span><span lang="id">Kalau saya hapus aplikasinya?</span></td>
+              <td><span lang="en">The data goes with it. Export a backup first.</span><span lang="id">Datanya ikut hilang. Ekspor cadangan dulu.</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p lang="en" style="margin-top:1.25rem">
+        Because there is no server, <strong>there is also no recovery</strong>. If you lose
+        the phone and have no backup, the history is gone. Section 7 covers how to avoid
+        that, and it is the one piece of housekeeping worth doing early.
+      </p>
+      <p lang="id" style="margin-top:1.25rem">
+        Karena tidak ada server, <strong>tidak ada pemulihan juga</strong>. Kalau ponsel
+        hilang dan Anda tidak punya cadangan, riwayatnya habis. Bagian 7 menjelaskan cara
+        menghindarinya, dan itu satu-satunya pekerjaan rumah yang sebaiknya dilakukan cepat.
+      </p>
+    </section>
+
+    <!-- 3 ------------------------------------------------------------------ -->
+    <section class="sec" id="install">
+      <h2><span class="secnum">3</span><span lang="en">Installing</span><span lang="id">Memasang</span></h2>
+
+      <p lang="en">
+        Sisaldo is not on the Play Store. You download an APK and install it yourself,
+        which Android calls sideloading and warns you about.
+      </p>
+      <p lang="id">
+        Sisaldo tidak ada di Play Store. Anda mengunduh APK dan memasangnya sendiri, yang
+        oleh Android disebut sideloading dan akan diperingatkan.
+      </p>
+
+      <ol class="steps">
+        <li>
+          <h4 lang="en">Download the APK on the phone</h4>
+          <h4 lang="id">Unduh APK di ponselnya</h4>
+          <p lang="en">Use the button at the top of this page. It always points at the newest release, so there is no version to choose.</p>
+          <p lang="id">Pakai tombol di bagian atas halaman ini. Tombolnya selalu mengarah ke rilis terbaru, jadi tidak ada versi yang perlu dipilih.</p>
+        </li>
+        <li>
+          <h4 lang="en">Allow your browser to install apps</h4>
+          <h4 lang="id">Izinkan browser memasang aplikasi</h4>
+          <p lang="en">Android asks once, for that one app. Approve it.</p>
+          <p lang="id">Android bertanya sekali, untuk aplikasi itu saja. Setujui.</p>
+        </li>
+        <li>
+          <h4 lang="en">Tap through the Play Protect warning</h4>
+          <h4 lang="id">Lewati peringatan Play Protect</h4>
+          <p lang="en">It will say the developer is unrecognised. The note below explains exactly why, so you can decide with the facts.</p>
+          <p lang="id">Akan muncul pesan bahwa pengembangnya tidak dikenali. Catatan di bawah menjelaskan alasannya, supaya Anda bisa memutuskan dengan informasi yang jelas.</p>
+        </li>
+        <li>
+          <h4 lang="en">Open it</h4>
+          <h4 lang="id">Buka aplikasinya</h4>
+          <p lang="en">The app starts genuinely empty: no accounts, no cards, no sample data.</p>
+          <p lang="id">Aplikasi dimulai benar-benar kosong: tanpa akun, tanpa kartu, tanpa data contoh.</p>
+        </li>
+      </ol>
+
+      <div class="callout">
+        <h4 lang="en">Why Android warns, stated plainly</h4>
+        <h4 lang="id">Kenapa Android memperingatkan, dijelaskan terbuka</h4>
+        <p lang="en">
+          The APK is signed with a debug key, and that key is a shared one from the
+          development template rather than a private key belonging to this app. So Android
+          cannot confirm who published it, and neither can you. The key's fingerprint is
+          what the Google sign-in used for Drive sync is registered against, which is why
+          it has not been changed. The practical risk is small (Drive access is limited to a
+          hidden folder only this app can see, and you still approve the consent screen),
+          but it is real, and you should weigh it rather than take it on trust. If you are
+          not comfortable with that, do not install this.
         </p>
-        <p>
-          Leave <strong>Limit group</strong> on <em>No group</em> unless several cards
-          share one ceiling between them, which the next step covers.
+        <p lang="id">
+          APK ini ditandatangani dengan kunci debug, dan kunci itu adalah kunci bersama dari
+          templat pengembangan, bukan kunci privat milik aplikasi ini. Jadi Android tidak
+          bisa memastikan siapa yang menerbitkannya, dan Anda juga tidak. Sidik jari kunci
+          itulah yang terdaftar untuk login Google yang dipakai sinkronisasi Drive, itu
+          sebabnya kunci ini belum diganti. Risiko praktisnya kecil (akses Drive terbatas
+          pada satu folder tersembunyi yang hanya bisa dilihat aplikasi ini, dan Anda masih
+          harus menyetujui layar izin), tetapi risikonya nyata. Timbang sendiri, jangan
+          hanya percaya. Kalau Anda tidak nyaman, jangan pasang.
         </p>
       </div>
-    </div>
+    </section>
 
-    <div class="shot-pair">
-      <figure class="shot-figure">
-        <img src="screenshots/02-accounts.png" alt="The Accounts page listing Aurora Visa, Nimbus Mastercard, Harbour Platinum and Cash with their limits" width="1080" height="2092" loading="lazy" decoding="async">
-        <figcaption>Accounts</figcaption>
+    <!-- 4 ------------------------------------------------------------------ -->
+    <section class="sec" id="setup">
+      <h2><span class="secnum">4</span><span lang="en">Setting up</span><span lang="id">Menyiapkan</span></h2>
+      <p class="lede" lang="en">
+        Sisaldo ships with nothing configured, because the figures are only worth something
+        if the cards and limits behind them are yours.
+      </p>
+      <p class="lede" lang="id">
+        Sisaldo datang tanpa konfigurasi apa pun, karena angkanya hanya berguna kalau kartu
+        dan limit di belakangnya memang milik Anda.
+      </p>
+
+      <figure class="shot">
+        <img src="screenshots/01-first-launch.png" alt="Sisaldo on first launch: a Get started card with an Add an account button" width="1080" height="2092" loading="lazy" decoding="async">
+        <figcaption><span lang="en">First launch</span><span lang="id">Pertama kali dibuka</span></figcaption>
       </figure>
-      <div class="shot-body">
-        <h3>Your accounts, in the order you want them</h3>
-        <p>
-          Everything you add is listed here with its limit. Reorder with the arrows,
-          since that order is the one the Dashboard and the pickers use. Deactivating a
-          card keeps all its history but stops it appearing when you add something new,
-          which is what you want for a card you have closed.
+
+      <div class="sub" id="setup-accounts">
+        <h3><span class="secnum">4.1</span><span lang="en">Accounts and cards</span><span lang="id">Akun dan kartu</span></h3>
+        <p lang="en">
+          An account is either a <strong>credit card</strong> or <strong>cash</strong>. A card
+          needs a limit; cash does not have one. Go to <code>Settings</code> &rarr;
+          <code>Accounts</code> &rarr; <code>Add account</code>.
+        </p>
+        <p lang="id">
+          Akun bisa berupa <strong>kartu kredit</strong> atau <strong>tunai</strong>. Kartu
+          butuh limit; tunai tidak. Buka <code>Settings</code> &rarr; <code>Accounts</code>
+          &rarr; <code>Add account</code>.
+        </p>
+        <p lang="en">
+          The colour you pick is not decoration. It tags that account everywhere it appears,
+          so a glance at the Ledger tells you which card a row belongs to without reading the
+          name. Reordering the list with the arrows changes the order used on the Dashboard
+          and in every picker. <code>Deactivate</code> keeps all of a card's history but stops
+          it appearing when you add something new, which is what you want for a card you have
+          closed.
+        </p>
+        <p lang="id">
+          Warna yang Anda pilih bukan hiasan. Warna itu menandai akun tersebut di mana pun ia
+          muncul, jadi sekali lihat Ledger Anda langsung tahu satu baris milik kartu mana tanpa
+          membaca namanya. Mengatur ulang urutan dengan tanda panah mengubah urutan yang dipakai
+          di Dashboard dan di semua pilihan. <code>Deactivate</code> menyimpan seluruh riwayat
+          kartu tetapi membuatnya tidak lagi muncul saat Anda menambah entri baru, yang cocok
+          untuk kartu yang sudah Anda tutup.
+        </p>
+        <div class="shot-row">
+          <figure class="shot">
+            <img src="screenshots/15-account-editor.png" alt="The new account form with name, kind, limit, limit group and colour" width="1080" height="2092" loading="lazy" decoding="async">
+            <figcaption><span lang="en">Adding a card</span><span lang="id">Menambah kartu</span></figcaption>
+          </figure>
+          <figure class="shot">
+            <img src="screenshots/02-accounts.png" alt="The Accounts page listing four accounts with their limits" width="1080" height="2092" loading="lazy" decoding="async">
+            <figcaption><span lang="en">The account list</span><span lang="id">Daftar akun</span></figcaption>
+          </figure>
+        </div>
+      </div>
+
+      <div class="sub" id="setup-groups">
+        <h3><span class="secnum">4.2</span><span lang="en">Shared limits</span><span lang="id">Limit bersama</span></h3>
+        <p lang="en">
+          Some banks issue several cards that all draw on one credit line. Adding their limits
+          together would tell you that you have far more room than you really do. A
+          <strong>limit group</strong> holds the real shared ceiling, and availability is then
+          reported for the group instead of per card.
+        </p>
+        <p lang="id">
+          Beberapa bank menerbitkan beberapa kartu yang semuanya menarik dari satu plafon kredit.
+          Menjumlahkan limitnya akan membuat Anda merasa punya ruang jauh lebih besar daripada
+          kenyataannya. <strong>Limit group</strong> menyimpan plafon bersama yang sebenarnya,
+          dan sisa limit lalu dilaporkan untuk grup itu, bukan per kartu.
+        </p>
+        <p lang="en">
+          Create one under <code>Settings</code> &rarr; <code>Accounts</code> &rarr;
+          <code>Add limit group</code>, then assign a card to it from that card's own editor. In
+          the example below, two cards with limits of 25 and 15 million share a ceiling of 30
+          million, so the group is what gets tracked.
+        </p>
+        <p lang="id">
+          Buat lewat <code>Settings</code> &rarr; <code>Accounts</code> &rarr;
+          <code>Add limit group</code>, lalu tetapkan kartu ke grup itu dari editor kartunya
+          sendiri. Pada contoh di bawah, dua kartu dengan limit 25 dan 15 juta berbagi plafon 30
+          juta, jadi yang dilacak adalah grupnya.
+        </p>
+        <figure class="shot">
+          <img src="screenshots/03-limit-group.png" alt="A limit group named Everyday cards with a shared limit of 30,000,000 across two cards" width="1080" height="2092" loading="lazy" decoding="async">
+          <figcaption><span lang="en">A shared limit that actually binds</span><span lang="id">Limit bersama yang benar-benar membatasi</span></figcaption>
+        </figure>
+      </div>
+
+      <div class="sub" id="setup-rules">
+        <h3><span class="secnum">4.3</span><span lang="en">Bonus rules</span><span lang="id">Aturan bonus</span></h3>
+        <p lang="en">
+          Many cards give something back for being used a set number of times, or for spending
+          past a threshold, within each statement period. A bonus rule describes that once, and
+          the Dashboard then shows how close you are. One rule per card, under
+          <code>Settings</code> &rarr; <code>Rules</code>.
+        </p>
+        <p lang="id">
+          Banyak kartu memberi imbalan kalau dipakai sejumlah kali tertentu, atau kalau belanja
+          melewati ambang tertentu, dalam satu periode tagihan. Aturan bonus menjelaskan hal itu
+          sekali, lalu Dashboard menunjukkan seberapa dekat Anda. Satu aturan per kartu, di
+          <code>Settings</code> &rarr; <code>Rules</code>.
+        </p>
+        <div class="tablewrap">
+          <table>
+            <thead>
+              <tr>
+                <th><span lang="en">Field</span><span lang="id">Kolom</span></th>
+                <th><span lang="en">What it means</span><span lang="id">Artinya</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>Count of usages</code></td>
+                <td><span lang="en">Counts qualifying purchases. Earned at "at least N purchases".</span><span lang="id">Menghitung jumlah transaksi yang memenuhi syarat. Didapat pada "minimal N transaksi".</span></td>
+              </tr>
+              <tr>
+                <td><code>Total amount</code></td>
+                <td><span lang="en">Adds up qualifying purchases instead of counting them.</span><span lang="id">Menjumlahkan nilai transaksi yang memenuhi syarat, bukan menghitung banyaknya.</span></td>
+              </tr>
+              <tr>
+                <td><code>Target</code></td>
+                <td><span lang="en">The number of usages, or the amount, you are aiming at.</span><span lang="id">Jumlah pemakaian, atau nilai, yang Anda tuju.</span></td>
+              </tr>
+              <tr>
+                <td><code>Minimum per-usage amount</code></td>
+                <td><span lang="en">A purchase below this never counts. Zero means every purchase counts.</span><span lang="id">Transaksi di bawah nilai ini tidak pernah dihitung. Nol berarti semua transaksi dihitung.</span></td>
+              </tr>
+              <tr>
+                <td><code>Reset day</code></td>
+                <td><span lang="en">The day of the month the count starts over. Match it to your statement date, or use 1 for a calendar month.</span><span lang="id">Tanggal saat hitungan dimulai ulang. Samakan dengan tanggal cetak tagihan Anda, atau pakai 1 untuk satu bulan kalender.</span></td>
+              </tr>
+              <tr>
+                <td><code>Excludes administration rows</code></td>
+                <td><span lang="en">Leaves fees out, since banks do not count them.</span><span lang="id">Mengeluarkan biaya-biaya, karena bank tidak menghitungnya.</span></td>
+              </tr>
+              <tr>
+                <td><code>Excludes refunded spends</code></td>
+                <td><span lang="en">A purchase you were refunded for stops counting.</span><span lang="id">Transaksi yang dananya sudah dikembalikan berhenti dihitung.</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p lang="en" style="margin-top:1.25rem">
+          Only <strong>dated</strong> entries count toward a rule, and only ones inside the
+          current reset window. A purchase you have planned but not yet been charged for has not
+          reached the card, so the bank has not counted it either.
+        </p>
+        <p lang="id" style="margin-top:1.25rem">
+          Hanya entri <strong>bertanggal</strong> yang dihitung untuk sebuah aturan, dan hanya
+          yang berada di dalam periode reset saat ini. Transaksi yang baru Anda rencanakan dan
+          belum ditagihkan berarti belum sampai ke kartu, jadi bank juga belum menghitungnya.
+        </p>
+        <figure class="shot">
+          <img src="screenshots/14-rules.png" alt="A bonus rule for Aurora Visa with a target of 10 usages and a minimum amount of 100,000" width="1080" height="2092" loading="lazy" decoding="async">
+          <figcaption><span lang="en">One rule, fully specified</span><span lang="id">Satu aturan, lengkap</span></figcaption>
+        </figure>
+      </div>
+
+      <div class="sub" id="setup-money">
+        <h3><span class="secnum">4.4</span><span lang="en">Current money</span><span lang="id">Uang saat ini</span></h3>
+        <p lang="en">
+          This is the one figure Sisaldo cannot work out for itself: what is in your wallet and
+          your bank right now. Set it under <code>Settings</code> &rarr;
+          <code>Update current money</code>, and everything about what you have left is
+          calculated from there.
+        </p>
+        <p lang="id">
+          Ini satu-satunya angka yang tidak bisa dihitung sendiri oleh Sisaldo: berapa isi dompet
+          dan rekening Anda sekarang. Aturlah di <code>Settings</code> &rarr;
+          <code>Update current money</code>, dan semua perhitungan tentang sisa uang Anda
+          bertumpu pada angka itu.
+        </p>
+        <p lang="en">
+          You do not need to keep it constantly up to date. Set it again whenever it has drifted,
+          typically after payday. The app records the date you set it and applies everything
+          recorded after that on top, so it stays meaningful in between.
+        </p>
+        <p lang="id">
+          Anda tidak perlu terus-menerus memperbaruinya. Setel ulang kapan pun angkanya sudah
+          menyimpang, biasanya setelah gajian. Aplikasi mencatat tanggal Anda menyetelnya lalu
+          menerapkan semua yang tercatat setelah itu di atasnya, jadi angkanya tetap bermakna di
+          antara dua penyetelan.
         </p>
       </div>
-    </div>
+    </section>
 
-    <div class="shot-pair flip">
-      <figure class="shot-figure">
-        <img src="screenshots/03-limit-group.png" alt="The Limit groups section showing Everyday cards with a shared limit of 30,000,000 across two cards" width="1080" height="2092" loading="lazy" decoding="async">
-        <figcaption>Limit groups</figcaption>
-      </figure>
-      <div class="shot-body">
-        <h3>When two cards share one limit</h3>
-        <p>
-          Some banks issue several cards that draw on a single credit line. Adding them
-          up would tell you that you have far more room than you do. A limit group
-          holds the real shared ceiling, and availability is then reported for the
-          group rather than for each card.
-        </p>
-        <p>
-          In the example, two cards with limits of 25 and 15 million share a ceiling of
-          30 million, so the group is what gets tracked.
-        </p>
-      </div>
-    </div>
+    <!-- 5 ------------------------------------------------------------------ -->
+    <section class="sec" id="daily">
+      <h2><span class="secnum">5</span><span lang="en">Daily use</span><span lang="id">Penggunaan harian</span></h2>
 
-    <div class="shot-pair">
-      <figure class="shot-figure">
-        <img src="screenshots/14-rules.png" alt="The Rules page showing a bonus rule for Aurora Visa with a target of 10 usages and a minimum amount" width="1080" height="2092" loading="lazy" decoding="async">
-        <figcaption>Bonus rules</figcaption>
-      </figure>
-      <div class="shot-body">
-        <h3>Track a card's perk without counting by hand</h3>
-        <p>
-          Many cards give something back for using them a set number of times, or for
-          spending past a threshold, within each statement period. A bonus rule
-          describes that, and the Dashboard then shows how close you are.
+      <div class="sub" id="daily-dashboard">
+        <h3><span class="secnum">5.1</span><span lang="en">The Dashboard</span><span lang="id">Dashboard</span></h3>
+        <p lang="en">
+          <strong>Left Over</strong> is the number that matters: your current money, plus what
+          people owe you, minus everything you owe across every card, including entries you have
+          planned but not yet been charged for. The working is printed underneath it, so you can
+          always see where the figure came from.
         </p>
-        <ul>
-          <li><strong>Count</strong> mode counts qualifying purchases; <strong>Total amount</strong> mode adds them up.</li>
-          <li>A <strong>minimum per-usage amount</strong> stops small purchases from counting.</li>
-          <li><strong>Reset day</strong> is the day of the month the count starts over, matching your statement.</li>
-          <li>Fees and refunded purchases can be excluded, so the count matches what the bank will actually credit.</li>
+        <p lang="id">
+          <strong>Left Over</strong> adalah angka yang paling penting: uang Anda saat ini,
+          ditambah yang orang lain utangi ke Anda, dikurangi semua tagihan di seluruh kartu,
+          termasuk entri yang baru direncanakan dan belum ditagihkan. Rinciannya dicetak di
+          bawahnya, jadi Anda selalu bisa melihat asal angkanya.
+        </p>
+        <ul lang="en">
+          <li><strong>Today</strong> is what you have spent since midnight.</li>
+          <li><strong>Card availability</strong> is the room left on each card or shared group, counting only charges that have actually happened.</li>
+          <li><strong>Bonus progress</strong> shows each rule as filled dots and a count.</li>
+          <li><strong>Owed to you</strong> groups anything you paid on someone's behalf, by person.</li>
         </ul>
+        <ul lang="id">
+          <li><strong>Today</strong> adalah pengeluaran Anda sejak tengah malam.</li>
+          <li><strong>Card availability</strong> adalah sisa ruang tiap kartu atau grup limit, hanya menghitung transaksi yang sudah benar-benar terjadi.</li>
+          <li><strong>Bonus progress</strong> menampilkan tiap aturan sebagai titik terisi dan angka.</li>
+          <li><strong>Owed to you</strong> mengelompokkan uang yang Anda bayarkan untuk orang lain, per orang.</li>
+        </ul>
+        <div class="shot-row">
+          <figure class="shot">
+            <img src="screenshots/04-dashboard.png" alt="The Dashboard showing Today, Left Over of 4,279,000 and card availability" width="1080" height="2092" loading="lazy" decoding="async">
+            <figcaption><span lang="en">Left Over, with its working shown</span><span lang="id">Left Over, dengan rinciannya</span></figcaption>
+          </figure>
+          <figure class="shot">
+            <img src="screenshots/05-bonus-progress.png" alt="Bonus progress showing five of ten dots filled, and an Owed to you list" width="1080" height="2092" loading="lazy" decoding="async">
+            <figcaption><span lang="en">Progress and who owes you</span><span lang="id">Progres dan siapa yang berutang</span></figcaption>
+          </figure>
+        </div>
       </div>
-    </div>
 
-    <div class="shot-pair flip">
-      <figure class="shot-figure">
-        <img src="screenshots/13-settings.png" alt="The Settings screen showing current money set to 14,000,000 as of a date" width="1080" height="2092" loading="lazy" decoding="async">
-        <figcaption>Current money</figcaption>
-      </figure>
-      <div class="shot-body">
-        <h3>Tell it how much money you have right now</h3>
-        <p>
-          This is the one figure Sisaldo cannot work out for itself: what is in your
-          wallet and your bank at this moment. Set it, and everything about what you
-          have left is calculated from there.
+      <div class="sub" id="daily-add">
+        <h3><span class="secnum">5.2</span><span lang="en">Adding an entry</span><span lang="id">Menambah entri</span></h3>
+        <p lang="en">
+          <code>Add transaction</code> on the Dashboard, or <code>New</code> on the Ledger.
+          Amount, which account, and what it was for is the whole required set; everything else
+          has a sensible default.
         </p>
-        <p>
-          You do not need to keep it updated constantly. Set it again whenever it has
-          drifted, typically after payday, and the app applies everything recorded
-          since on top of it.
+        <p lang="id">
+          <code>Add transaction</code> di Dashboard, atau <code>New</code> di Ledger. Nominal,
+          akun mana, dan untuk apa: itu semua yang wajib; sisanya sudah ada nilai bawaan yang
+          wajar.
         </p>
+        <p lang="en">
+          For a purchase in another currency, set <code>Currency</code> and the
+          <code>rate</code> you were actually charged at. The rupiah figure is worked out once
+          and kept, so a later change in the exchange rate never rewrites your history.
+        </p>
+        <p lang="id">
+          Untuk pembelian dalam mata uang lain, isi <code>Currency</code> dan <code>rate</code>
+          yang benar-benar dikenakan ke Anda. Nilai rupiahnya dihitung sekali lalu disimpan,
+          sehingga perubahan kurs di kemudian hari tidak pernah mengubah riwayat Anda.
+        </p>
+        <figure class="shot">
+          <img src="screenshots/09-add-transaction.png" alt="The New transaction screen with amount, account picker, description, kind, date and currency" width="1080" height="2092" loading="lazy" decoding="async">
+          <figcaption><span lang="en">New transaction</span><span lang="id">Transaksi baru</span></figcaption>
+        </figure>
       </div>
-    </div>
 
-  </div>
-</section>
-
-<section class="band wrap reveal">
-  <p class="eyebrow">Day to day</p>
-  <h2>Add a row, read the top of the Dashboard, get on with your life.</h2>
-
-  <div class="guide">
-
-    <div class="shot-pair">
-      <figure class="shot-figure">
-        <img src="screenshots/04-dashboard.png" alt="The Dashboard showing Today, Left Over of 4,279,000 and card availability" width="1080" height="2092" loading="lazy" decoding="async">
-        <figcaption>Dashboard</figcaption>
-      </figure>
-      <div class="shot-body">
-        <h3>Left Over is the number that matters</h3>
-        <p>
-          It is your current money, plus what people owe you, minus everything you owe
-          across every card, including things you have planned but not yet been charged
-          for. The working is printed underneath it so you can see where it came from.
+      <div class="sub" id="daily-kinds">
+        <h3><span class="secnum">5.3</span><span lang="en">Entry kinds</span><span lang="id">Jenis entri</span></h3>
+        <p lang="en">
+          Getting the kind right is what lets the app tell "I owe less now" apart from "I spent
+          less". This is the full list.
         </p>
-        <p>
-          <strong>Today</strong> is what you have spent since midnight.
-          <strong>Card availability</strong> shows the room left on each card or shared
-          group, and only counts charges that have actually happened.
+        <p lang="id">
+          Memilih jenis yang tepat itulah yang membuat aplikasi bisa membedakan "tagihan saya
+          berkurang" dari "pengeluaran saya berkurang". Ini daftar lengkapnya.
         </p>
+        <div class="tablewrap">
+          <table>
+            <thead>
+              <tr>
+                <th><span lang="en">Kind</span><span lang="id">Jenis</span></th>
+                <th><span lang="en">Use it for</span><span lang="id">Dipakai untuk</span></th>
+                <th><span lang="en">Effect</span><span lang="id">Efeknya</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>Spend</code></td>
+                <td><span lang="en">An ordinary purchase.</span><span lang="id">Pembelian biasa.</span></td>
+                <td><span lang="en">Increases what the card owes.</span><span lang="id">Menambah tagihan kartu.</span></td>
+              </tr>
+              <tr>
+                <td><code>Card payment</code></td>
+                <td><span lang="en">Paying your bill.</span><span lang="id">Membayar tagihan Anda.</span></td>
+                <td><span lang="en">Reduces what the card owes, and reduces your money.</span><span lang="id">Mengurangi tagihan kartu, dan mengurangi uang Anda.</span></td>
+              </tr>
+              <tr>
+                <td><code>Refund</code></td>
+                <td><span lang="en">A purchase reversed by the merchant.</span><span lang="id">Transaksi yang dibatalkan penjual.</span></td>
+                <td><span lang="en">Reduces what the card owes. Can exclude the original from a bonus rule.</span><span lang="id">Mengurangi tagihan kartu. Bisa mengeluarkan transaksi aslinya dari aturan bonus.</span></td>
+              </tr>
+              <tr>
+                <td><code>Bonus / cashback</code></td>
+                <td><span lang="en">Credit the bank gave you.</span><span lang="id">Kredit yang diberikan bank.</span></td>
+                <td><span lang="en">Reduces what the card owes.</span><span lang="id">Mengurangi tagihan kartu.</span></td>
+              </tr>
+              <tr>
+                <td><code>Pay on behalf</code></td>
+                <td><span lang="en">You paid, someone else owes you.</span><span lang="id">Anda yang bayar, orang lain berutang ke Anda.</span></td>
+                <td><span lang="en">Increases what the card owes, and adds to "Owed to you".</span><span lang="id">Menambah tagihan kartu, dan masuk ke "Owed to you".</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
 
-    <div class="shot-pair flip">
-      <figure class="shot-figure">
-        <img src="screenshots/05-bonus-progress.png" alt="Bonus progress showing five of ten filled dots, and an Owed to you list totalling 900,000" width="1080" height="2092" loading="lazy" decoding="async">
-        <figcaption>Progress and who owes you</figcaption>
-      </figure>
-      <div class="shot-body">
-        <h3>Perk progress, and money you have lent</h3>
-        <p>
-          Each bonus rule gets a row of dots and a count, so you can see at a glance
-          whether a perk is still worth chasing this month.
+      <div class="sub" id="daily-edit">
+        <h3><span class="secnum">5.4</span><span lang="en">Editing</span><span lang="id">Mengubah</span></h3>
+        <p lang="en">
+          Tapping any row in the Ledger opens it in a sheet you can correct in place, without
+          leaving the list: change the amount, move it to another card, or delete it.
         </p>
-        <p>
-          <strong>Owed to you</strong> gathers anything you paid on someone else's
-          behalf, grouped by person. It is counted in Left Over, because it is money
-          you expect back. Mark one as settled from the transaction itself once they
-          have paid you.
+        <p lang="id">
+          Menyentuh baris mana pun di Ledger membukanya dalam panel yang bisa Anda perbaiki di
+          tempat, tanpa keluar dari daftar: ubah nominal, pindahkan ke kartu lain, atau hapus.
         </p>
+        <p lang="en">
+          The <code>Has a date</code> / <code>No date</code> toggle here is the most
+          consequential control in the app. Section 6.1 explains exactly what it changes.
+        </p>
+        <p lang="id">
+          Sakelar <code>Has a date</code> / <code>No date</code> di sini adalah kendali paling
+          berpengaruh di seluruh aplikasi. Bagian 6.1 menjelaskan persisnya apa yang berubah.
+        </p>
+        <figure class="shot">
+          <img src="screenshots/10-quick-edit.png" alt="A transaction open in a bottom sheet with a Has a date and No date toggle" width="1080" height="2092" loading="lazy" decoding="async">
+          <figcaption><span lang="en">Quick edit, with the date toggle</span><span lang="id">Ubah cepat, dengan sakelar tanggal</span></figcaption>
+        </figure>
       </div>
-    </div>
 
-    <div class="shot-pair">
-      <figure class="shot-figure">
-        <img src="screenshots/09-add-transaction.png" alt="The New transaction screen with amount, account picker, description, kind and date" width="1080" height="2092" loading="lazy" decoding="async">
-        <figcaption>New transaction</figcaption>
-      </figure>
-      <div class="shot-body">
-        <h3>Adding something</h3>
-        <p>
-          Amount, which account, and what it was for. That is the whole required set;
-          everything else has a sensible default.
+      <div class="sub" id="daily-ledger">
+        <h3><span class="secnum">5.5</span><span lang="en">The Ledger</span><span lang="id">Ledger</span></h3>
+        <p lang="en">
+          The Ledger opens on the current month, because that is almost always what you want,
+          and tells you how many of your total entries it is showing. Planned entries sit at the
+          top marked <em>Pending</em>, since they have no date to sort by.
         </p>
-        <p>
-          <strong>Kind</strong> distinguishes a purchase from a payment to the card, a
-          refund, a cashback, or something you paid on behalf of someone else. Getting
-          the kind right is what lets the app tell "I owe less now" apart from "I spent
-          less".
+        <p lang="id">
+          Ledger terbuka pada bulan berjalan, karena itu yang hampir selalu Anda butuhkan, dan
+          memberi tahu berapa dari total entri Anda yang sedang ditampilkan. Entri yang baru
+          direncanakan berada di atas dengan tanda <em>Pending</em>, karena tidak punya tanggal
+          untuk diurutkan.
         </p>
-        <p>
-          For a purchase in another currency, set the currency and the rate you were
-          charged at, and the rupiah figure is worked out and kept.
+        <p lang="en">
+          The <strong>Debit</strong> and <strong>Credit</strong> totals at the bottom are for
+          exactly what is on screen, so they follow whatever you have filtered or searched.
+          Filter by account, kind, or pending status, and set a date range to look at any period.
+          That makes this the quickest way to answer "how much did this card cost me in May".
         </p>
+        <p lang="id">
+          Total <strong>Debit</strong> dan <strong>Credit</strong> di bagian bawah dihitung tepat
+          dari apa yang tampil di layar, jadi ikut berubah sesuai filter atau pencarian Anda.
+          Filter berdasarkan akun, jenis, atau status pending, dan atur rentang tanggal untuk
+          melihat periode apa pun. Ini cara tercepat menjawab "kartu ini menghabiskan berapa di
+          bulan Mei".
+        </p>
+        <div class="shot-row">
+          <figure class="shot">
+            <img src="screenshots/06-ledger.png" alt="The Ledger showing this month with pending entries first and debit and credit totals" width="1080" height="2092" loading="lazy" decoding="async">
+            <figcaption><span lang="en">Pending first, totals at the foot</span><span lang="id">Pending di atas, total di bawah</span></figcaption>
+          </figure>
+          <figure class="shot">
+            <img src="screenshots/07-ledger-filters.png" alt="The Ledger with filters open showing account, kind, status and date range" width="1080" height="2092" loading="lazy" decoding="async">
+            <figcaption><span lang="en">Filters</span><span lang="id">Filter</span></figcaption>
+          </figure>
+        </div>
       </div>
-    </div>
 
-    <div class="shot-pair flip">
-      <figure class="shot-figure">
-        <img src="screenshots/10-quick-edit.png" alt="A transaction opened in a bottom sheet, with amount, account, description, date toggle and kind" width="1080" height="2092" loading="lazy" decoding="async">
-        <figcaption>Quick edit</figcaption>
-      </figure>
-      <div class="shot-body">
-        <h3>Fixing one that is already there</h3>
-        <p>
-          Tapping any row in the Ledger opens it in a sheet you can correct in place,
-          without leaving the list. Change the amount, move it to another card, or
-          delete it.
+      <div class="sub" id="daily-cards">
+        <h3><span class="secnum">5.6</span><span lang="en">Cards and payees</span><span lang="id">Kartu dan penerima</span></h3>
+        <p lang="en">
+          The <strong>Cards</strong> tab gives one card at a time: what it owes all-time, its
+          progress toward its perk, and a <strong>reconciliation note</strong>. That last one is
+          free text for what your bank app said and when, so the next time the app and the
+          statement disagree you know when they last agreed.
         </p>
-        <p>
-          The <strong>Has a date / No date</strong> toggle here is the most consequential
-          control in the app. The next section explains exactly what it changes.
+        <p lang="id">
+          Tab <strong>Cards</strong> menampilkan satu kartu sekaligus: total tagihannya sepanjang
+          waktu, progres menuju perk-nya, dan <strong>reconciliation note</strong>. Yang terakhir
+          adalah catatan bebas tentang apa yang ditampilkan aplikasi bank Anda dan kapan, jadi
+          saat nanti aplikasi dan tagihan tidak cocok, Anda tahu kapan terakhir keduanya cocok.
         </p>
+        <p lang="en">
+          A <strong>payee</strong> is a name to attach to a pay-on-behalf entry, so "Owed to you"
+          can group by person. You can create one straight from the transaction form;
+          <code>Settings</code> &rarr; <code>Payees</code> is for renaming and tidying up.
+        </p>
+        <p lang="id">
+          <strong>Payee</strong> adalah nama yang dilekatkan ke entri pay-on-behalf, supaya
+          "Owed to you" bisa dikelompokkan per orang. Anda bisa membuatnya langsung dari formulir
+          transaksi; <code>Settings</code> &rarr; <code>Payees</code> untuk mengganti nama dan
+          merapikan.
+        </p>
+        <div class="shot-row">
+          <figure class="shot">
+            <img src="screenshots/08-cards.png" alt="The Cards screen showing owed all-time, bonus progress and a reconciliation note field" width="1080" height="2092" loading="lazy" decoding="async">
+            <figcaption><span lang="en">Cards</span><span lang="id">Kartu</span></figcaption>
+          </figure>
+          <figure class="shot">
+            <img src="screenshots/16-payees.png" alt="The Payees page listing two people and the amounts they owe" width="1080" height="2092" loading="lazy" decoding="async">
+            <figcaption><span lang="en">Payees</span><span lang="id">Penerima</span></figcaption>
+          </figure>
+        </div>
       </div>
-    </div>
+    </section>
 
-    <div class="shot-pair">
-      <figure class="shot-figure">
-        <img src="screenshots/06-ledger.png" alt="The Ledger showing this month's transactions with debit and credit totals at the bottom" width="1080" height="2092" loading="lazy" decoding="async">
-        <figcaption>Ledger</figcaption>
-      </figure>
-      <div class="shot-body">
-        <h3>Everything, newest first</h3>
-        <p>
-          The Ledger opens on the current month, because that is almost always what you
-          want, and says how many of your total entries it is showing. Planned entries
-          sit at the top marked <em>Pending</em>, since they have no date to sort by.
-        </p>
-        <p>
-          The <strong>Debit</strong> and <strong>Credit</strong> totals at the bottom
-          are for exactly what is on screen, so they respond to whatever you have
-          filtered or searched.
-        </p>
-      </div>
-    </div>
-
-    <div class="shot-pair flip">
-      <figure class="shot-figure">
-        <img src="screenshots/07-ledger-filters.png" alt="The Ledger with filters open, showing account, kind, status and date range controls" width="1080" height="2092" loading="lazy" decoding="async">
-        <figcaption>Filters</figcaption>
-      </figure>
-      <div class="shot-body">
-        <h3>Narrowing it down</h3>
-        <p>
-          Filter by account, by kind, or by whether an entry is still pending, and set
-          a date range to look at any period rather than this month. Search matches the
-          description.
-        </p>
-        <p>
-          Because the totals follow the filter, this doubles as a quick way to answer
-          "how much did this card cost me in May".
-        </p>
-      </div>
-    </div>
-
-    <div class="shot-pair">
-      <figure class="shot-figure">
-        <img src="screenshots/08-cards.png" alt="The Cards screen showing owed all-time, bonus progress and a reconciliation note field per card" width="1080" height="2092" loading="lazy" decoding="async">
-        <figcaption>Cards</figcaption>
-      </figure>
-      <div class="shot-body">
-        <h3>One card at a time</h3>
-        <p>
-          Per card: what it owes all-time, its progress toward its perk, and a
-          <strong>reconciliation note</strong>. That last one is a free-text field for
-          what your bank app said and when, so the next time the app and the statement
-          disagree you know when they last agreed.
-        </p>
-      </div>
-    </div>
-
-    <div class="shot-pair flip">
-      <figure class="shot-figure">
-        <img src="screenshots/16-payees.png" alt="The Payees page listing two people with the amounts they owe" width="1080" height="2092" loading="lazy" decoding="async">
-        <figcaption>Payees</figcaption>
-      </figure>
-      <div class="shot-body">
-        <h3>People, not just amounts</h3>
-        <p>
-          A payee is a name to attach to something you paid for someone else, so
-          "Owed to you" can group by person rather than showing a list of unrelated
-          entries. You can create one straight from the transaction form; this page is
-          for renaming and tidying up.
-        </p>
-      </div>
-    </div>
-
-  </div>
-</section>
-
-<section class="band wrap reveal">
-  <p class="eyebrow">How the numbers work</p>
-  <h2>One rule explains almost every figure in the app.</h2>
-  <div class="prose" style="margin-top:1.25rem">
-    <p>
-      A transaction either has a date or it does not, and that single distinction
-      decides which totals it is allowed to affect. An entry with no date is a plan:
-      money you have committed to, that no card has been charged for yet.
-    </p>
-  </div>
-
-  <div class="split">
-    <div class="split-card">
-      <p class="split-tag">Has a date</p>
-      <h3>It happened</h3>
-      <p>The card has been charged, or the money has moved. It counts everywhere.</p>
-      <ul class="feeds">
-        <li><span class="yes">counts</span><span>toward what you owe</span></li>
-        <li><span class="yes">counts</span><span>against your card's available room</span></li>
-        <li><span class="yes">counts</span><span>toward a bonus rule</span></li>
-        <li><span class="yes">counts</span><span>in Left Over</span></li>
-      </ul>
-    </div>
-    <div class="split-card is-planned">
-      <p class="split-tag">No date</p>
-      <h3>It is a plan</h3>
-      <p>You have committed the money, but nothing has reached the card yet.</p>
-      <ul class="feeds">
-        <li><span class="yes">counts</span><span>toward what you owe</span></li>
-        <li><span class="no">no effect</span><span>on your card's available room</span></li>
-        <li><span class="no">no effect</span><span>on a bonus rule</span></li>
-        <li><span class="yes">counts</span><span>in Left Over</span></li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="prose" style="margin-top:2.5rem">
-    <h3>Why availability and what-you-owe disagree</h3>
-    <p>
-      They are answering different questions. Your available credit is a fact about the
-      card, so only real charges reduce it. What you owe is a fact about your money, and
-      a bill you have already decided to pay is owed whether or not it has landed. Both
-      figures are correct; expecting them to match is the mistake.
-    </p>
-
-    <h3>Cash moves no figure at all</h3>
-    <p>
-      Cash accounts always report zero owed, and a cash entry does not change your
-      current money either. That sounds wrong until you remember where current money
-      comes from: you type it in by looking at your wallet, and your wallet already
-      reflects the cash you spent. Applying those entries again would subtract the same
-      rupiah twice. Cash is tracked so you can see where it went, not to move the total.
-    </p>
-    <p>
-      One consequence worth knowing: cash you lent someone still appears under "Owed to
-      you", but is left out of the amount added back into Left Over, for the same
-      reason.
-    </p>
-
-    <h3>Nothing is ever stored as a total</h3>
-    <p>
-      Every balance, every availability figure and every rule count is recalculated from
-      your transactions each time it is shown. None of them is saved anywhere. That is
-      slightly more work for the app and the reason it cannot quietly drift out of
-      agreement with itself, which is exactly what the spreadsheets it replaced did.
-    </p>
-  </div>
-</section>
-
-<section class="band wrap reveal">
-  <p class="eyebrow">Backup and sync</p>
-  <h2>Your data is yours, and it can leave whenever you want.</h2>
-
-  <div class="guide">
-    <div class="shot-pair">
-      <figure class="shot-figure">
-        <img src="screenshots/11-backup-and-sync.png" alt="System settings showing Google Drive sync and Backup export and import buttons" width="1080" height="2092" loading="lazy" decoding="async">
-        <figcaption>Backup and Drive sync</figcaption>
-      </figure>
-      <div class="shot-body">
-        <h3>Export a file, or sync to your own Drive</h3>
-        <p>
-          <strong>Export backup</strong> writes everything to a single file you control,
-          ready for Drive, email, or wherever you keep things.
-          <strong>Import backup</strong> reads one back.
-        </p>
-        <p>
-          Importing <em>merges</em>, it does not replace. Importing the same file twice
-          changes nothing, and importing a file from another phone combines the two
-          rather than one overwriting the other.
-        </p>
-        <p>
-          <strong>Google Drive sync</strong> is optional and off until you connect it. It
-          uses a hidden folder that only this app can see, so it cannot read anything
-          else in your Drive, and the sign-in token stays in the device's keychain.
-        </p>
-      </div>
-    </div>
-
-    <div class="shot-pair flip">
-      <figure class="shot-figure">
-        <img src="screenshots/12-import-backup.png" alt="A dialog asking to confirm importing a backup of 49 entries, explaining that it merges rather than overwrites" width="1080" height="2092" loading="lazy" decoding="async">
-        <figcaption>Importing</figcaption>
-      </figure>
-      <div class="shot-body">
-        <h3>It tells you what it is about to do</h3>
-        <p>
-          Before importing, the app says how many entries the file holds, how many are
-          new to this device, and how many records they touch. Nothing happens until you
-          confirm.
-        </p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section class="band wrap reveal">
-  <p class="eyebrow">Updates</p>
-  <h2>Two ways a change reaches your phone.</h2>
-  <p class="lede prose" style="margin-top:1rem">
-    They are not interchangeable, and Settings shows both under one heading so you never
-    have to work out which one you need.
-  </p>
-
-  <div class="paths">
-    <div class="path">
-      <p class="eyebrow">The everyday one</p>
-      <h3>App updates</h3>
-      <p>
-        Screens, wording, and the calculations themselves can be updated without
-        reinstalling anything. These arrive quietly in the background and wait for you.
+    <!-- 6 ------------------------------------------------------------------ -->
+    <section class="sec" id="numbers">
+      <h2><span class="secnum">6</span><span lang="en">How the numbers work</span><span lang="id">Cara angkanya dihitung</span></h2>
+      <p class="lede" lang="en">
+        Read this section if you ever want to check the app rather than trust it. Everything
+        here is a deliberate decision, not an accident.
       </p>
-      <dl>
-        <dt>Arrives</dt><dd>On its own, in the background</dd>
-        <dt>You do</dt><dd>Tap Restart to update, when it suits you</dd>
-        <dt>Costs</dt><dd>Nothing, and it never interrupts you</dd>
-      </dl>
-    </div>
-    <div class="path">
-      <p class="eyebrow">The occasional one</p>
-      <h3>Full app version</h3>
-      <p>
-        Anything needing a new permission or a new underlying library ships as a whole
-        new APK. Settings can find it, download it, and hand it to Android to install.
+      <p class="lede" lang="id">
+        Baca bagian ini kalau Anda ingin memeriksa aplikasinya, bukan hanya mempercayainya.
+        Semua di sini adalah keputusan yang disengaja, bukan kebetulan.
       </p>
-      <dl>
-        <dt>Arrives</dt><dd>When you check, or from this page</dd>
-        <dt>You do</dt><dd>Tap through the download and the install</dd>
-        <dt>Costs</dt><dd>A full download, around 100 MB</dd>
-      </dl>
-    </div>
-  </div>
 
-  <div class="callout" style="border-color: var(--rule); background: transparent;">
-    <h3>One thing that surprises people</h3>
-    <p>
-      App updates only reach installs of the exact same full version. When a new full
-      version comes out, existing installs stop receiving app updates until that
-      version is installed too. So if Settings says you are up to date on app updates,
-      it is still worth installing a new full version promptly when one appears.
-    </p>
-  </div>
-</section>
+      <div class="sub" id="numbers-dated">
+        <h3><span class="secnum">6.1</span><span lang="en">Dated and undated</span><span lang="id">Bertanggal dan tanpa tanggal</span></h3>
+        <p lang="en">
+          An entry either has a date or it does not, and that single distinction decides which
+          totals it is allowed to affect. An entry with no date is a <strong>plan</strong>: money
+          you have committed, that no card has been charged for yet.
+        </p>
+        <p lang="id">
+          Sebuah entri punya tanggal atau tidak, dan perbedaan tunggal itulah yang menentukan
+          total mana saja yang boleh dipengaruhinya. Entri tanpa tanggal adalah
+          <strong>rencana</strong>: uang yang sudah Anda komitmenkan, tetapi belum ditagihkan ke
+          kartu mana pun.
+        </p>
+        <div class="split">
+          <div class="split-card">
+            <span class="eyebrow" lang="en">Has a date</span>
+            <span class="eyebrow" lang="id">Bertanggal</span>
+            <h4 lang="en">It happened</h4>
+            <h4 lang="id">Sudah terjadi</h4>
+            <p lang="en">The card has been charged, or the money has moved.</p>
+            <p lang="id">Kartu sudah ditagih, atau uangnya sudah berpindah.</p>
+            <ul class="feeds">
+              <li><b class="yes" lang="en">counts</b><b class="yes" lang="id">dihitung</b><span lang="en">toward what you owe</span><span lang="id">untuk tagihan Anda</span></li>
+              <li><b class="yes" lang="en">counts</b><b class="yes" lang="id">dihitung</b><span lang="en">against available limit</span><span lang="id">terhadap sisa limit</span></li>
+              <li><b class="yes" lang="en">counts</b><b class="yes" lang="id">dihitung</b><span lang="en">toward a bonus rule</span><span lang="id">untuk aturan bonus</span></li>
+              <li><b class="yes" lang="en">counts</b><b class="yes" lang="id">dihitung</b><span lang="en">in Left Over</span><span lang="id">di Left Over</span></li>
+            </ul>
+          </div>
+          <div class="split-card is-planned">
+            <span class="eyebrow" lang="en">No date</span>
+            <span class="eyebrow" lang="id">Tanpa tanggal</span>
+            <h4 lang="en">It is a plan</h4>
+            <h4 lang="id">Masih rencana</h4>
+            <p lang="en">Committed, but nothing has reached the card yet.</p>
+            <p lang="id">Sudah dikomitmenkan, tetapi belum sampai ke kartu.</p>
+            <ul class="feeds">
+              <li><b class="yes" lang="en">counts</b><b class="yes" lang="id">dihitung</b><span lang="en">toward what you owe</span><span lang="id">untuk tagihan Anda</span></li>
+              <li><b class="no" lang="en">no effect</b><b class="no" lang="id">tidak berefek</b><span lang="en">on available limit</span><span lang="id">pada sisa limit</span></li>
+              <li><b class="no" lang="en">no effect</b><b class="no" lang="id">tidak berefek</b><span lang="en">on a bonus rule</span><span lang="id">pada aturan bonus</span></li>
+              <li><b class="yes" lang="en">counts</b><b class="yes" lang="id">dihitung</b><span lang="en">in Left Over</span><span lang="id">di Left Over</span></li>
+            </ul>
+          </div>
+        </div>
+      </div>
 
-<footer class="foot wrap">
-  <p>
-    Sisaldo is a personal app, published so its owner's own devices can keep themselves
-    up to date. It carries no warranty and nobody is on call for it. The source is not
-    public; this repository holds the releases and this page.
-  </p>
-  <p>
-    <a href="https://github.com/dickofn/sisaldo-app/releases">All releases</a> &middot;
-    <a href="https://github.com/dickofn/sisaldo-app/releases/latest/download/sisaldo.apk">Download the newest APK</a>
-  </p>
-  <p class="note">
-    Screenshots show invented accounts and invented amounts, on a folded Pixel Fold.
-  </p>
-</footer>
+      <div class="sub" id="numbers-avail">
+        <h3><span class="secnum">6.2</span><span lang="en">Why availability and what you owe disagree</span><span lang="id">Kenapa sisa limit dan tagihan tidak cocok</span></h3>
+        <p lang="en">
+          They answer different questions. Your available credit is a fact about the card, so
+          only real charges reduce it. What you owe is a fact about your money, and a bill you
+          have already decided to pay is owed whether or not it has landed. Both figures are
+          correct. Expecting them to match is the mistake.
+        </p>
+        <p lang="id">
+          Keduanya menjawab pertanyaan yang berbeda. Sisa limit adalah fakta tentang kartu, jadi
+          hanya transaksi nyata yang menguranginya. Tagihan adalah fakta tentang uang Anda, dan
+          pengeluaran yang sudah Anda putuskan untuk dibayar tetap terhitung sebagai kewajiban,
+          sudah masuk atau belum. Kedua angka itu benar. Yang salah adalah mengharapkan keduanya
+          sama.
+        </p>
+      </div>
+
+      <div class="sub" id="numbers-cash">
+        <h3><span class="secnum">6.3</span><span lang="en">Why cash moves nothing</span><span lang="id">Kenapa tunai tidak mengubah apa pun</span></h3>
+        <p lang="en">
+          Cash accounts always report zero owed, and a cash entry does not change your current
+          money either. That sounds wrong until you remember where current money comes from: you
+          type it in by looking at your wallet, and your wallet already reflects the cash you
+          spent. Applying those entries again would subtract the same rupiah twice. Cash is
+          tracked so you can see where it went, not to move the total.
+        </p>
+        <p lang="id">
+          Akun tunai selalu melaporkan tagihan nol, dan entri tunai juga tidak mengubah uang Anda
+          saat ini. Kedengarannya salah, sampai Anda ingat dari mana angka uang saat ini berasal:
+          Anda mengisinya dengan melihat dompet, dan dompet Anda sudah mencerminkan uang tunai
+          yang terpakai. Menerapkan entri itu sekali lagi berarti mengurangi rupiah yang sama dua
+          kali. Tunai dicatat supaya Anda bisa melihat ke mana perginya, bukan untuk mengubah
+          totalnya.
+        </p>
+        <p lang="en">
+          One consequence worth knowing: cash you lent someone still appears under "Owed to you",
+          but is left out of the amount added back into Left Over, for the same reason.
+        </p>
+        <p lang="id">
+          Satu akibat yang perlu diketahui: uang tunai yang Anda pinjamkan tetap muncul di
+          "Owed to you", tetapi tidak ikut ditambahkan kembali ke Left Over, dengan alasan yang
+          sama.
+        </p>
+      </div>
+
+      <div class="sub" id="numbers-admin">
+        <h3><span class="secnum">6.4</span><span lang="en">Administration entries</span><span lang="id">Entri biaya administrasi</span></h3>
+        <p lang="en">
+          Bank fees (a notification fee, a stamp duty, a statement fee) are marked as
+          administration entries. They still count toward what you owe, because you do owe them,
+          but a bonus rule can exclude them, because banks do not count fees toward a perk.
+        </p>
+        <p lang="id">
+          Biaya bank (biaya notifikasi, bea materai, biaya cetak tagihan) ditandai sebagai entri
+          administrasi. Biaya itu tetap dihitung sebagai tagihan, karena memang harus Anda bayar,
+          tetapi aturan bonus bisa mengeluarkannya, karena bank tidak menghitung biaya sebagai
+          bagian dari perk.
+        </p>
+        <p lang="en">
+          The flag is stored on each entry and you can change it per entry. The app suggests it
+          from a list of common fee names when you type a description, but nothing re-classifies
+          your history later: editing that list never changes entries you already saved.
+        </p>
+        <p lang="id">
+          Tanda ini disimpan di masing-masing entri dan bisa Anda ubah per entri. Aplikasi
+          menyarankannya dari daftar nama biaya yang umum saat Anda menulis keterangan, tetapi
+          tidak ada yang mengklasifikasi ulang riwayat Anda di kemudian hari: mengubah daftar itu
+          tidak pernah mengubah entri yang sudah tersimpan.
+        </p>
+      </div>
+
+      <div class="sub" id="numbers-stored">
+        <h3><span class="secnum">6.5</span><span lang="en">Nothing is stored as a total</span><span lang="id">Tidak ada total yang disimpan</span></h3>
+        <p lang="en">
+          Every balance, every availability figure and every rule count is recalculated from your
+          entries each time it is shown. None of them is saved anywhere. That is slightly more
+          work for the app, and it is the reason it cannot quietly drift out of agreement with
+          itself, which is exactly what the spreadsheets it replaced did.
+        </p>
+        <p lang="id">
+          Setiap saldo, setiap angka sisa limit, dan setiap hitungan aturan dihitung ulang dari
+          entri Anda setiap kali ditampilkan. Tidak ada satu pun yang disimpan. Itu memang sedikit
+          lebih berat bagi aplikasi, dan justru itu sebabnya angka-angkanya tidak bisa perlahan
+          jadi tidak konsisten satu sama lain, hal yang persis terjadi pada spreadsheet yang
+          digantikannya.
+        </p>
+      </div>
+    </section>
+
+    <!-- 7 ------------------------------------------------------------------ -->
+    <section class="sec" id="backup">
+      <h2><span class="secnum">7</span><span lang="en">Backup and sync</span><span lang="id">Pencadangan dan sinkronisasi</span></h2>
+      <p lang="en">
+        Since nothing is on a server, a backup is the only thing standing between you and losing
+        your history with the phone. Both options are under <code>Settings</code> &rarr;
+        <code>System settings</code>.
+      </p>
+      <p lang="id">
+        Karena tidak ada apa pun di server, cadangan adalah satu-satunya hal yang mencegah
+        riwayat Anda hilang bersama ponselnya. Kedua pilihan ada di <code>Settings</code> &rarr;
+        <code>System settings</code>.
+      </p>
+
+      <h4 lang="en">Export and import a file</h4>
+      <h4 lang="id">Ekspor dan impor berkas</h4>
+      <p lang="en">
+        <code>Export backup</code> writes everything to one file you control, ready for Drive,
+        email, or wherever you keep things. <code>Import backup</code> reads one back.
+      </p>
+      <p lang="id">
+        <code>Export backup</code> menulis semuanya ke satu berkas yang Anda kendalikan, siap
+        untuk Drive, email, atau di mana pun Anda menyimpannya. <code>Import backup</code>
+        membacanya kembali.
+      </p>
+      <p lang="en">
+        Importing <strong>merges</strong>, it does not replace. Importing the same file twice
+        changes nothing, and importing a file from another phone combines the two rather than one
+        overwriting the other. Before it does anything, it tells you how many entries the file
+        holds and how many are new to this device.
+      </p>
+      <p lang="id">
+        Impor bersifat <strong>menggabungkan</strong>, bukan mengganti. Mengimpor berkas yang sama
+        dua kali tidak mengubah apa pun, dan mengimpor berkas dari ponsel lain menggabungkan
+        keduanya, bukan saling menimpa. Sebelum melakukan apa pun, aplikasi memberi tahu berapa
+        entri yang ada di berkas itu dan berapa yang baru bagi perangkat ini.
+      </p>
+
+      <h4 lang="en">Google Drive sync</h4>
+      <h4 lang="id">Sinkronisasi Google Drive</h4>
+      <p lang="en">
+        Optional, and off until you connect it. It uses a hidden, app-only folder in your own
+        Drive, so this app cannot read anything else in there, and the sign-in token stays in the
+        device's secure keychain. This is the one feature that deliberately uses the network.
+      </p>
+      <p lang="id">
+        Opsional, dan mati sampai Anda menghubungkannya. Fitur ini memakai folder tersembunyi
+        khusus aplikasi di Drive Anda sendiri, jadi aplikasi ini tidak bisa membaca apa pun yang
+        lain di sana, dan token login tetap di keychain aman perangkat. Ini satu-satunya fitur
+        yang memang memakai jaringan.
+      </p>
+      <div class="shot-row">
+        <figure class="shot">
+          <img src="screenshots/11-backup-and-sync.png" alt="System settings showing Google Drive sync and Backup export and import buttons" width="1080" height="2092" loading="lazy" decoding="async">
+          <figcaption><span lang="en">Backup and Drive sync</span><span lang="id">Cadangan dan sinkronisasi Drive</span></figcaption>
+        </figure>
+        <figure class="shot">
+          <img src="screenshots/12-import-backup.png" alt="A dialog confirming an import of 49 entries and explaining that it merges" width="1080" height="2092" loading="lazy" decoding="async">
+          <figcaption><span lang="en">It says what it will do first</span><span lang="id">Dijelaskan dulu sebelum dijalankan</span></figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- 8 ------------------------------------------------------------------ -->
+    <section class="sec" id="updates">
+      <h2><span class="secnum">8</span><span lang="en">Updates</span><span lang="id">Pembaruan</span></h2>
+      <p lang="en">
+        There are two ways a change reaches your phone, and Settings shows both under one heading
+        so you never have to work out which one you need.
+      </p>
+      <p lang="id">
+        Ada dua cara sebuah perubahan sampai ke ponsel Anda, dan Settings menampilkan keduanya di
+        bawah satu judul supaya Anda tidak perlu menebak mana yang dibutuhkan.
+      </p>
+
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr>
+              <th></th>
+              <th><code>App updates</code></th>
+              <th><code>Full app version</code></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span lang="en">Delivers</span><span lang="id">Membawa</span></td>
+              <td><span lang="en">Screens, wording, calculations</span><span lang="id">Tampilan, teks, perhitungan</span></td>
+              <td><span lang="en">A whole new APK</span><span lang="id">APK baru seutuhnya</span></td>
+            </tr>
+            <tr>
+              <td><span lang="en">Arrives</span><span lang="id">Datang</span></td>
+              <td><span lang="en">Quietly, in the background</span><span lang="id">Diam-diam, di latar belakang</span></td>
+              <td><span lang="en">When you check, or from this page</span><span lang="id">Saat Anda memeriksa, atau dari halaman ini</span></td>
+            </tr>
+            <tr>
+              <td><span lang="en">You do</span><span lang="id">Yang Anda lakukan</span></td>
+              <td><span lang="en">Tap Restart to update, when it suits you</span><span lang="id">Ketuk Restart to update, kapan pun Anda mau</span></td>
+              <td><span lang="en">Tap through a download and an install</span><span lang="id">Ikuti proses unduh dan pasang</span></td>
+            </tr>
+            <tr>
+              <td><span lang="en">Size</span><span lang="id">Ukuran</span></td>
+              <td><span lang="en">Small</span><span lang="id">Kecil</span></td>
+              <td><span lang="en">Around 100 MB</span><span lang="id">Sekitar 100 MB</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p lang="en" style="margin-top:1.25rem">
+        Neither happens without you launching the app, and neither sends any of your data
+        anywhere. An update check asks "is there something newer" and nothing else.
+      </p>
+      <p lang="id" style="margin-top:1.25rem">
+        Keduanya tidak terjadi kecuali Anda membuka aplikasinya, dan keduanya tidak mengirim data
+        Anda ke mana pun. Pemeriksaan pembaruan hanya menanyakan "apakah ada yang lebih baru",
+        tidak lebih.
+      </p>
+
+      <div class="callout">
+        <h4 lang="en">The one thing that surprises people</h4>
+        <h4 lang="id">Satu hal yang sering mengejutkan</h4>
+        <p lang="en">
+          App updates only reach installs of the exact same full version. When a new full version
+          comes out, existing installs stop receiving app updates until that version is installed
+          too. So if Settings says you are up to date on app updates, it is still worth installing
+          a new full version promptly when one appears.
+        </p>
+        <p lang="id">
+          App updates hanya sampai ke pemasangan dengan versi penuh yang sama persis. Ketika versi
+          penuh baru keluar, pemasangan yang lama berhenti menerima app updates sampai versi itu
+          juga dipasang. Jadi meskipun Settings mengatakan app updates Anda sudah paling baru,
+          memasang versi penuh yang baru begitu tersedia tetap penting.
+        </p>
+      </div>
+
+      <div class="shot-row">
+        <figure class="shot">
+          <img src="screenshots/17-updates.png" alt="The Updates section showing a newer full version available for download" width="1080" height="2092" loading="lazy" decoding="async">
+          <figcaption><span lang="en">A newer version found</span><span lang="id">Versi lebih baru ditemukan</span></figcaption>
+        </figure>
+        <figure class="shot">
+          <img src="screenshots/18-updates-permission.png" alt="The app explaining that Android has not allowed it to install apps, with an Open settings button" width="1080" height="2092" loading="lazy" decoding="async">
+          <figcaption><span lang="en">If Android has not granted permission</span><span lang="id">Kalau Android belum memberi izin</span></figcaption>
+        </figure>
+        <figure class="shot">
+          <img src="screenshots/19-android-installer.png" alt="Android's own installer asking whether to update the app" width="1080" height="2092" loading="lazy" decoding="async">
+          <figcaption><span lang="en">Android's own confirmation</span><span lang="id">Konfirmasi dari Android sendiri</span></figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- 9 ------------------------------------------------------------------ -->
+    <section class="sec" id="trouble">
+      <h2><span class="secnum">9</span><span lang="en">Troubleshooting</span><span lang="id">Pemecahan masalah</span></h2>
+
+      <h4 lang="en">The app and my statement disagree</h4>
+      <h4 lang="id">Aplikasi dan tagihan saya tidak cocok</h4>
+      <p lang="en">
+        Check three things before assuming a bug. First, whether the difference is exactly a
+        pending entry, in which case see section 6.1. Second, whether a fee is missing, since
+        banks add those without telling you. Third, whether you are comparing availability with
+        what you owe, which are different questions (section 6.2). Then write what the bank says
+        into the card's reconciliation note, so next time you know when they last agreed.
+      </p>
+      <p lang="id">
+        Periksa tiga hal sebelum menyimpulkan ada bug. Pertama, apakah selisihnya tepat sebesar
+        satu entri pending; kalau ya, lihat bagian 6.1. Kedua, apakah ada biaya yang belum
+        tercatat, karena bank menambahkannya tanpa memberi tahu. Ketiga, apakah Anda membandingkan
+        sisa limit dengan tagihan, padahal keduanya pertanyaan berbeda (bagian 6.2). Setelah itu,
+        tulis angka dari bank ke reconciliation note kartu tersebut, supaya lain kali Anda tahu
+        kapan terakhir keduanya cocok.
+      </p>
+
+      <h4 lang="en">"Sisaldo isn't allowed to install apps on this device"</h4>
+      <h4 lang="id">"Sisaldo isn't allowed to install apps on this device"</h4>
+      <p lang="en">
+        Android has not given Sisaldo permission to install an APK. Tap <code>Open settings</code>
+        and enable "Allow from this source", then come back and install. The downloaded file is
+        kept, so nothing needs downloading again.
+      </p>
+      <p lang="id">
+        Android belum memberi Sisaldo izin memasang APK. Ketuk <code>Open settings</code> lalu
+        aktifkan "Allow from this source", kemudian kembali dan pasang. Berkas yang sudah diunduh
+        tetap tersimpan, jadi tidak perlu mengunduh ulang.
+      </p>
+
+      <h4 lang="en">An update check fails</h4>
+      <h4 lang="id">Pemeriksaan pembaruan gagal</h4>
+      <p lang="en">
+        The app reports the reason rather than hiding it. Being offline is an expected state, not
+        an error, and everything else in the app keeps working regardless. A failed check never
+        means your data is at risk.
+      </p>
+      <p lang="id">
+        Aplikasi menampilkan alasannya, bukan menyembunyikannya. Sedang offline adalah keadaan yang
+        wajar, bukan kesalahan, dan seluruh fitur lain tetap berjalan. Pemeriksaan yang gagal tidak
+        pernah berarti data Anda berisiko.
+      </p>
+
+      <h4 lang="en">I want to start over</h4>
+      <h4 lang="id">Saya ingin mulai dari awal</h4>
+      <p lang="en">
+        <code>Settings</code> &rarr; <code>System settings</code> &rarr;
+        <code>Clear all data</code> empties everything. Export a backup first if there is any
+        chance you will want it, because this cannot be undone.
+      </p>
+      <p lang="id">
+        <code>Settings</code> &rarr; <code>System settings</code> &rarr;
+        <code>Clear all data</code> mengosongkan semuanya. Ekspor cadangan dulu kalau ada
+        kemungkinan Anda membutuhkannya, karena langkah ini tidak bisa dibatalkan.
+      </p>
+    </section>
+
+    <footer class="foot">
+      <p lang="en">
+        Sisaldo is a personal app, published so its owner's own devices can keep themselves up to
+        date. It carries no warranty and nobody is on call for it. The source is not public; the
+        repository behind this page holds the releases and this documentation only.
+      </p>
+      <p lang="id">
+        Sisaldo adalah aplikasi pribadi, diterbitkan supaya perangkat pemiliknya sendiri bisa
+        memperbarui diri. Tidak ada jaminan apa pun dan tidak ada yang siaga menanganinya. Kode
+        sumbernya tidak publik; repositori di belakang halaman ini hanya memuat rilis dan
+        dokumentasi ini.
+      </p>
+      <p>
+        <a href="https://github.com/dickofn/sisaldo-app/releases">
+          <span lang="en">All releases</span><span lang="id">Semua rilis</span>
+        </a>
+        &middot;
+        <a href="https://github.com/dickofn/sisaldo-app/releases/latest/download/sisaldo.apk">
+          <span lang="en">Download the newest APK</span><span lang="id">Unduh APK terbaru</span>
+        </a>
+      </p>
+      <p lang="en">
+        Every screenshot on this page shows invented accounts and invented amounts, captured on a
+        folded Pixel Fold.
+      </p>
+      <p lang="id">
+        Semua tangkapan layar di halaman ini memakai akun dan nominal fiktif, diambil di Pixel Fold
+        dalam keadaan terlipat.
+      </p>
+    </footer>
+
+  </main>
+</div>
 
 <script>
-// The reveal itself. The guard in <head> already decided whether anything is
-// hidden at all, so this only has to reveal what that opted in to.
 (function () {
-  if (!document.documentElement.classList.contains('js-reveal')) return;
+  // --- Language toggle ---------------------------------------------------
+  var TITLES = { en: 'Sisaldo documentation', id: 'Dokumentasi Sisaldo' };
+  var buttons = document.querySelectorAll('[data-set-lang]');
 
-  var targets = document.querySelectorAll('.reveal');
+  function apply(lang) {
+    document.documentElement.setAttribute('data-lang', lang);
+    document.documentElement.setAttribute('lang', lang);
+    document.title = TITLES[lang] || TITLES.en;
+    buttons.forEach(function (b) {
+      b.setAttribute('aria-pressed', String(b.getAttribute('data-set-lang') === lang));
+    });
+    try { localStorage.setItem('sisaldo-lang', lang); } catch (e) {}
+  }
+
+  buttons.forEach(function (b) {
+    b.addEventListener('click', function () { apply(b.getAttribute('data-set-lang')); });
+  });
+
+  // Sync the buttons and the title with whatever the pre-paint script chose.
+  apply(document.documentElement.getAttribute('data-lang') || 'en');
+
+  // --- Highlight the section being read ---------------------------------
+  if (!('IntersectionObserver' in window)) return;
+  var links = {};
+  document.querySelectorAll('.toc a[href^="#"]').forEach(function (a) {
+    links[a.getAttribute('href').slice(1)] = a;
+  });
+  var targets = Object.keys(links)
+    .map(function (id) { return document.getElementById(id); })
+    .filter(Boolean);
+
   var io = new IntersectionObserver(function (entries) {
     entries.forEach(function (entry) {
-      if (!entry.isIntersecting) return;
-      entry.target.classList.add('seen');
-      io.unobserve(entry.target);
+      var link = links[entry.target.id];
+      if (!link) return;
+      if (entry.isIntersecting) {
+        Object.keys(links).forEach(function (id) { links[id].classList.remove('here'); });
+        link.classList.add('here');
+      }
     });
-  }, { rootMargin: '0px 0px -12% 0px' });
+  }, { rootMargin: '-20% 0px -70% 0px' });
 
-  targets.forEach(function (el) { io.observe(el); });
+  targets.forEach(function (t) { io.observe(t); });
 })();
 </script>
 
