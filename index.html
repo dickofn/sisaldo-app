@@ -1,0 +1,1007 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sisaldo, a spending and credit-card tracker for Android</title>
+<meta name="description" content="Sisaldo tracks spending across credit cards and cash on Android. No account, no backend, no cloud unless you ask for it. Download the APK and read the full guide.">
+<meta name="color-scheme" content="light dark">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ---------------------------------------------------------------------------
+   Sisaldo's own palette and faces, on purpose. Documentation that looks like
+   a different product than the one it documents makes the reader do work for
+   nothing. The four accent colours are the exact ones the demo dataset gives
+   its four accounts, so the page is coloured by the same system the app
+   colours accounts by.
+
+   The one structural device: a dashed border means planned, a solid border
+   means recorded. That is not decoration, it is the single rule the whole
+   ledger derives from, and the app's own Ledger already separates pending
+   rows with a dashed divider.
+--------------------------------------------------------------------------- */
+:root {
+  --paper: #FAFAF7;
+  --paper-raised: #FFFFFF;
+  --ink: #16181D;
+  --ink-soft: #5B616E;
+  --ink-faint: #8A8F99;
+  --rule: #E4E2DC;
+
+  --aurora: #4F7CFF;
+  --nimbus: #9B6BFF;
+  --harbour: #E8A33D;
+  --cash: #4BA98B;
+  --credit: #1F7A5C;
+
+  --sans: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --radius: 14px;
+  --measure: 34rem;
+  --gutter: clamp(1.25rem, 5vw, 3rem);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #101216;
+    --paper-raised: #181B21;
+    --ink: #F2F1EE;
+    --ink-soft: #A7ACB6;
+    --ink-faint: #767C87;
+    --rule: #2A2E36;
+    --credit: #4BC195;
+  }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: clamp(1rem, 0.96rem + 0.2vw, 1.0625rem);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Layout ------------------------------------------------------------------ */
+
+.wrap {
+  width: 100%;
+  max-width: 68rem;
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+.band { padding-block: clamp(3rem, 8vw, 6rem); }
+.band + .band { border-top: 1px solid var(--rule); }
+
+/* Type ------------------------------------------------------------------- */
+
+h1, h2, h3 { line-height: 1.15; letter-spacing: -0.02em; margin: 0; text-wrap: balance; }
+h1 { font-size: clamp(2.1rem, 1.4rem + 3.4vw, 3.6rem); font-weight: 600; }
+h2 { font-size: clamp(1.5rem, 1.2rem + 1.4vw, 2.1rem); font-weight: 600; }
+h3 { font-size: 1.125rem; font-weight: 600; letter-spacing: -0.01em; }
+
+p { margin: 0; }
+p + p { margin-top: 0.9em; }
+
+.prose { max-width: var(--measure); }
+.prose > * + * { margin-top: 0.9em; }
+.prose a { color: inherit; text-decoration-color: var(--ink-faint); text-underline-offset: 0.2em; }
+.prose a:hover { text-decoration-color: currentColor; }
+
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin: 0 0 1.25rem;
+}
+
+.lede { font-size: clamp(1.0625rem, 1rem + 0.4vw, 1.25rem); color: var(--ink-soft); }
+.note { font-family: var(--mono); font-size: 0.8125rem; color: var(--ink-faint); line-height: 1.5; }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+/* Hero ------------------------------------------------------------------- */
+
+.hero { padding-block: clamp(3rem, 9vw, 6.5rem) clamp(2.5rem, 7vw, 4.5rem); }
+.hero h1 { max-width: 26ch; }
+.hero .lede { max-width: 46ch; margin-top: 1.25rem; }
+
+.hero-grid { display: grid; gap: clamp(2.5rem, 6vw, 4rem); }
+@media (min-width: 60rem) {
+  .hero-grid { grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); align-items: center; }
+}
+
+/* Download --------------------------------------------------------------- */
+
+.actions { margin-top: 2rem; display: flex; flex-wrap: wrap; gap: 0.75rem 1rem; align-items: center; }
+
+.btn {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  padding: 0.85rem 1.4rem;
+  border-radius: 999px;
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+  font: 600 1rem/1 var(--sans);
+  text-decoration: none;
+  transition: transform 140ms ease, opacity 140ms ease;
+}
+.btn:hover { transform: translateY(-1px); opacity: 0.92; }
+.btn:focus-visible { outline: 2px solid var(--aurora); outline-offset: 3px; }
+.btn .btn-sub { font-family: var(--mono); font-size: 0.75rem; font-weight: 400; opacity: 0.7; }
+
+.btn-quiet { background: transparent; color: var(--ink); border-color: var(--rule); }
+.btn-quiet:hover { border-color: var(--ink-faint); }
+
+@media (prefers-reduced-motion: reduce) { .btn:hover { transform: none; } }
+
+/* The ledger fragment: the hero object, and the page's thesis ------------- */
+
+.ledger {
+  background: var(--paper-raised);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.25rem 0.5rem;
+  box-shadow: 0 1px 2px rgb(22 24 29 / 0.04), 0 12px 32px -18px rgb(22 24 29 / 0.18);
+}
+
+.ledger-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  padding-bottom: 0.85rem;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr) auto;
+  gap: 0.5rem 0.9rem;
+  align-items: center;
+  padding: 0.85rem 0;
+  border-top: 1px solid var(--rule);
+}
+/* The signature: planned rows are dashed, recorded rows are solid. */
+.row.planned { border-top-style: dashed; }
+
+.row-when { font-family: var(--mono); font-size: 0.8125rem; color: var(--ink-faint); }
+
+/* On a narrow phone, a fixed date column squeezes descriptions into two or
+   three cramped lines. Give the date its own line instead. */
+@media (max-width: 28rem) {
+  .row { grid-template-columns: minmax(0, 1fr) auto; }
+  .row-when { grid-column: 1 / -1; }
+}
+.row-what { min-width: 0; }
+.row-desc { display: block; font-size: 0.9375rem; overflow-wrap: break-word; }
+.row-acct { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.8125rem; margin-top: 0.15rem; }
+.dot { width: 0.5rem; height: 0.5rem; border-radius: 50%; flex: none; }
+.dot-aurora { background: var(--aurora); }
+.dot-nimbus { background: var(--nimbus); }
+.dot-harbour { background: var(--harbour); }
+.dot-cash { background: var(--cash); }
+.acct-aurora { color: var(--aurora); }
+.acct-nimbus { color: var(--nimbus); }
+.acct-harbour { color: var(--harbour); }
+.acct-cash { color: var(--cash); }
+
+.row-amt { font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 0.9375rem; text-align: right; white-space: nowrap; }
+.row-amt.is-credit { color: var(--credit); }
+
+.ledger-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  border-top: 1px solid var(--ink);
+  margin-top: 0.35rem;
+  padding: 0.9rem 0;
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+}
+.ledger-foot span { color: var(--ink-faint); }
+.ledger-foot b { font-weight: 500; font-variant-numeric: tabular-nums; }
+
+/* Facts ------------------------------------------------------------------ */
+
+.facts { display: grid; gap: 1.5rem 2.5rem; margin-top: 2.5rem; }
+@media (min-width: 40rem) { .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 60rem) { .facts { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+.fact { border-top: 2px solid var(--ink); padding-top: 0.9rem; }
+.fact dt { font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint); }
+.fact dd { margin: 0.4rem 0 0; font-size: 0.9375rem; color: var(--ink-soft); }
+
+/* Steps ------------------------------------------------------------------ */
+
+/* Numbered because installing genuinely is a sequence: each step only makes
+   sense after the one above it. */
+.steps { list-style: none; margin: 2.5rem 0 0; padding: 0; display: grid; gap: 1.5rem; counter-reset: step; }
+@media (min-width: 52rem) { .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2rem 2.5rem; } }
+
+.step { counter-increment: step; border-top: 1px solid var(--rule); padding-top: 1rem; }
+.step::before {
+  content: counter(step, decimal-leading-zero);
+  display: block;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  color: var(--ink-faint);
+  margin-bottom: 0.5rem;
+}
+.step h3 { margin-bottom: 0.35rem; }
+.step p { font-size: 0.9375rem; color: var(--ink-soft); }
+
+.callout {
+  margin-top: 2.5rem;
+  border: 1px dashed var(--harbour);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.4rem;
+  background: color-mix(in srgb, var(--harbour) 7%, transparent);
+  max-width: 46rem;
+}
+.callout h3 { margin-bottom: 0.4rem; }
+.callout p { font-size: 0.9375rem; color: var(--ink-soft); }
+
+/* Guide: alternating screenshot and prose -------------------------------- */
+
+.guide { display: grid; gap: clamp(3rem, 8vw, 5.5rem); margin-top: 3rem; }
+
+.shot-pair { display: grid; gap: clamp(1.5rem, 4vw, 3rem); align-items: center; }
+@media (min-width: 56rem) {
+  .shot-pair { grid-template-columns: minmax(0, 15rem) minmax(0, 1fr); }
+  /* Alternating sides needs the COLUMN WIDTHS swapped as well as the order.
+     Reordering alone moves the phone into the wide column and squeezes the
+     prose into the 15rem one. */
+  .shot-pair.flip { grid-template-columns: minmax(0, 1fr) minmax(0, 15rem); }
+  .shot-pair.flip > .shot-figure { order: 2; }
+}
+
+.shot-figure { margin: 0; }
+.shot-figure img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--rule);
+  border-radius: 20px;
+  background: var(--paper-raised);
+}
+.shot-figure figcaption { margin-top: 0.7rem; font-family: var(--mono); font-size: 0.75rem; color: var(--ink-faint); }
+
+.shot-body h3 { font-size: clamp(1.1875rem, 1.1rem + 0.5vw, 1.4375rem); margin-bottom: 0.6rem; }
+.shot-body p { color: var(--ink-soft); }
+.shot-body > * + * { margin-top: 0.9em; }
+.shot-body ul { margin: 0.9em 0 0; padding-left: 1.1rem; color: var(--ink-soft); }
+.shot-body li + li { margin-top: 0.4em; }
+
+/* Two screenshots side by side, for steps that need a before and after. */
+.shot-duo { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+
+/* The dated / undated diagram: the concepts section's centrepiece --------- */
+
+.split { margin-top: 2.5rem; display: grid; gap: 1.25rem; max-width: 46rem; }
+@media (min-width: 44rem) { .split { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+.split-card { border: 1px solid var(--ink); border-radius: var(--radius); padding: 1.25rem 1.35rem; background: var(--paper-raised); }
+.split-card.is-planned { border-style: dashed; }
+.split-tag { font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint); }
+.split-card h3 { margin: 0.5rem 0 0.6rem; }
+.split-card p { font-size: 0.9375rem; color: var(--ink-soft); }
+
+.feeds { list-style: none; margin: 1rem 0 0; padding: 0.9rem 0 0; border-top: 1px solid var(--rule); display: grid; gap: 0.45rem; }
+.feeds li { display: flex; gap: 0.6rem; align-items: baseline; font-family: var(--mono); font-size: 0.8125rem; }
+.feeds .yes { color: var(--credit); }
+.feeds .no { color: var(--ink-faint); }
+.feeds span:last-child { font-family: var(--sans); color: var(--ink-soft); }
+
+/* Update paths ----------------------------------------------------------- */
+
+.paths { display: grid; gap: 1.25rem; margin-top: 2.5rem; max-width: 52rem; }
+@media (min-width: 46rem) { .paths { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+.path { border: 1px solid var(--rule); border-radius: var(--radius); padding: 1.35rem; background: var(--paper-raised); }
+.path .eyebrow { margin-bottom: 0.6rem; }
+.path h3 { margin-bottom: 0.5rem; }
+.path p { font-size: 0.9375rem; color: var(--ink-soft); }
+.path dl { margin: 1rem 0 0; padding-top: 0.9rem; border-top: 1px solid var(--rule); display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0.4rem 0.9rem; font-size: 0.8125rem; }
+.path dt { font-family: var(--mono); color: var(--ink-faint); }
+.path dd { margin: 0; color: var(--ink-soft); }
+
+/* Footer ----------------------------------------------------------------- */
+
+.foot { padding-block: clamp(2.5rem, 6vw, 4rem); border-top: 1px solid var(--rule); }
+.foot p { font-size: 0.875rem; color: var(--ink-faint); max-width: 44rem; }
+.foot p + p { margin-top: 0.8em; }
+.foot a { color: var(--ink-soft); text-decoration-color: var(--rule); text-underline-offset: 0.2em; }
+.foot a:hover { color: var(--ink); text-decoration-color: currentColor; }
+
+/* Reveal on scroll, quietly, and never at the cost of readability --------- */
+
+/* Scoped to .js-reveal, which is set by an inline script in <head> ONLY when
+   that script has already confirmed it can undo it. Hiding content behind a
+   script that might not run is how a styling flourish turns into a blank
+   page. */
+@media (prefers-reduced-motion: no-preference) {
+  .js-reveal .reveal { opacity: 0; transform: translateY(12px); transition: opacity 520ms ease, transform 520ms ease; }
+  .js-reveal .reveal.seen { opacity: 1; transform: none; }
+}
+</style>
+<script>
+// Opt in to the scroll reveal only when it can definitely be undone: the
+// observer exists and the reader has not asked for reduced motion. Everything
+// stays visible otherwise, including with JavaScript off entirely.
+if ('IntersectionObserver' in window && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  document.documentElement.classList.add('js-reveal');
+}
+</script>
+</head>
+<body>
+
+<header class="hero wrap">
+  <div class="hero-grid">
+    <div>
+      <p class="eyebrow">Sisaldo &middot; Android</p>
+      <h1>Know what you have actually got left, not what your statement says.</h1>
+      <p class="lede">
+        A spending and credit-card tracker that keeps every figure on your own phone.
+        No account to make, no server to trust, and no cloud at all unless you switch
+        it on. It replaced three spreadsheets, so it is built around the one thing
+        those got wrong.
+      </p>
+      <div class="actions">
+        <a class="btn" href="https://github.com/dickofn/sisaldo-app/releases/latest/download/sisaldo.apk">
+          Download the APK
+          <span class="btn-sub">Android</span>
+        </a>
+        <a class="btn btn-quiet" href="#install">How to install</a>
+      </div>
+      <p class="note" style="margin-top:1.1rem">
+        Always resolves to the newest release. Sideloaded, not from the Play Store.
+      </p>
+    </div>
+
+    <!-- The hero object is a real ledger fragment rather than a picture of one:
+         it is the product's central idea, and it stays crisp at any size. -->
+    <div class="ledger" aria-label="An example of the Ledger, showing two planned entries above three recorded ones">
+      <div class="ledger-head">
+        <span>Ledger</span>
+        <span>July 2026</span>
+      </div>
+      <div class="row planned">
+        <span class="row-when">Pending</span>
+        <span class="row-what">
+          <span class="row-desc">Tiket Bus Antar Kota</span>
+          <span class="row-acct acct-aurora"><span class="dot dot-aurora"></span>Aurora Visa</span>
+        </span>
+        <span class="row-amt">Rp 480.000</span>
+      </div>
+      <div class="row planned">
+        <span class="row-when">Pending</span>
+        <span class="row-what">
+          <span class="row-desc">Servis AC tahunan</span>
+          <span class="row-acct acct-nimbus"><span class="dot dot-nimbus"></span>Nimbus Mastercard</span>
+        </span>
+        <span class="row-amt">Rp 650.000</span>
+      </div>
+      <div class="row">
+        <span class="row-when">2026-07-26</span>
+        <span class="row-what">
+          <span class="row-desc">Bayar tagihan Harbour</span>
+          <span class="row-acct acct-harbour"><span class="dot dot-harbour"></span>Harbour Platinum</span>
+        </span>
+        <span class="row-amt is-credit">&minus;Rp 3.000.000</span>
+      </div>
+      <div class="row">
+        <span class="row-when">2026-07-24</span>
+        <span class="row-what">
+          <span class="row-desc">Swalayan Kirana</span>
+          <span class="row-acct acct-nimbus"><span class="dot dot-nimbus"></span>Nimbus Mastercard</span>
+        </span>
+        <span class="row-amt">Rp 188.000</span>
+      </div>
+      <div class="row">
+        <span class="row-when">2026-07-21</span>
+        <span class="row-what">
+          <span class="row-desc">Iuran RT (Bagas)</span>
+          <span class="row-acct acct-cash"><span class="dot dot-cash"></span>Cash</span>
+        </span>
+        <span class="row-amt">Rp 150.000</span>
+      </div>
+      <div class="ledger-foot">
+        <span>Debit <b>Rp 13.141.000</b></span>
+        <span>Credit <b>Rp 3.445.000</b></span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section class="band wrap reveal">
+  <p class="eyebrow">What it is</p>
+  <h2>Three credit cards, a wallet, and one honest number at the bottom.</h2>
+  <div class="prose" style="margin-top:1.25rem">
+    <p>
+      Sisaldo tracks what you spend across credit cards and cash, works out what each
+      card really owes, how much room is left on it, and how much money you actually
+      have free once everything you have committed to is taken off. It handles shared
+      credit limits across several cards, and it tracks progress toward the perks a
+      card gives you for using it a certain number of times a month.
+    </p>
+    <p>
+      It is a personal tool, published so its owner's own devices can update
+      themselves. You are welcome to use it. Nobody is supporting it.
+    </p>
+  </div>
+
+  <dl class="facts">
+    <div class="fact">
+      <dt>Storage</dt>
+      <dd>One SQLite file on your device. Nothing is sent anywhere by default.</dd>
+    </div>
+    <div class="fact">
+      <dt>Accounts</dt>
+      <dd>None. There is no sign-up, and no server that knows you exist.</dd>
+    </div>
+    <div class="fact">
+      <dt>Currency</dt>
+      <dd>Indonesian rupiah, with a per-entry rate for anything foreign.</dd>
+    </div>
+    <div class="fact">
+      <dt>Platform</dt>
+      <dd>Android, sideloaded. Portrait, landscape, and unfolded foldables.</dd>
+    </div>
+  </dl>
+</section>
+
+<section class="band wrap reveal" id="install">
+  <p class="eyebrow">Install</p>
+  <h2>Four steps, and one warning you should read first.</h2>
+
+  <ol class="steps">
+    <li class="step">
+      <h3>Download the APK</h3>
+      <p>
+        Use the button at the top of this page, on the phone itself. It always points
+        at the newest release, so there is no version to pick.
+      </p>
+    </li>
+    <li class="step">
+      <h3>Allow the install</h3>
+      <p>
+        Android will ask whether your browser may install unknown apps. Approve it for
+        that one app. This is the normal sideloading prompt, not a sign anything is
+        wrong.
+      </p>
+    </li>
+    <li class="step">
+      <h3>Tap through Play Protect</h3>
+      <p>
+        You will see a warning about an unrecognised developer. See the note below for
+        exactly why, then choose to install anyway.
+      </p>
+    </li>
+    <li class="step">
+      <h3>Open it</h3>
+      <p>
+        The app starts genuinely empty: no accounts, no cards, no sample data. The next
+        section walks through setting it up.
+      </p>
+    </li>
+  </ol>
+
+  <div class="callout">
+    <h3>Why Android warns about this app</h3>
+    <p>
+      The APK is signed with a debug key rather than a distribution key. That is
+      deliberate, not an oversight: the key's fingerprint is what the Google sign-in
+      client used for Drive sync is registered against, and changing it would break
+      that. The practical consequence is that Android cannot recognise the publisher,
+      so it warns. If that trade is not one you want to accept, do not install it.
+    </p>
+  </div>
+</section>
+
+<section class="band wrap reveal">
+  <p class="eyebrow">Set it up</p>
+  <h2>Everything on the Dashboard is built from what you enter here.</h2>
+  <p class="lede prose" style="margin-top:1rem">
+    Sisaldo ships with nothing configured, because the numbers are only worth anything
+    if the cards and limits behind them are yours.
+  </p>
+
+  <div class="guide">
+
+    <div class="shot-pair">
+      <figure class="shot-figure">
+        <img src="screenshots/01-first-launch.png" alt="Sisaldo on first launch, showing a Get started card and an Add an account button" width="1080" height="2092" loading="lazy" decoding="async">
+        <figcaption>First launch</figcaption>
+      </figure>
+      <div class="shot-body">
+        <h3>Start with one account</h3>
+        <p>
+          A fresh install has no accounts at all, so the Dashboard has nothing to show
+          and says so. Tap <strong>Add an account</strong> to begin. An account is
+          either a credit card or cash, and you can have as many of each as you like.
+        </p>
+      </div>
+    </div>
+
+    <div class="shot-pair flip">
+      <figure class="shot-figure">
+        <img src="screenshots/15-account-editor.png" alt="The new account form, with fields for name, kind, limit, limit group and colour" width="1080" height="2092" loading="lazy" decoding="async">
+        <figcaption>Adding a card</figcaption>
+      </figure>
+      <div class="shot-body">
+        <h3>Name it, set its limit, give it a colour</h3>
+        <p>
+          A credit card needs a limit; cash does not have one. The colour is not
+          decoration: it tags that account everywhere it appears, so a glance at the
+          Ledger tells you which card a row belongs to without reading the name.
+        </p>
+        <p>
+          Leave <strong>Limit group</strong> on <em>No group</em> unless several cards
+          share one ceiling between them, which the next step covers.
+        </p>
+      </div>
+    </div>
+
+    <div class="shot-pair">
+      <figure class="shot-figure">
+        <img src="screenshots/02-accounts.png" alt="The Accounts page listing Aurora Visa, Nimbus Mastercard, Harbour Platinum and Cash with their limits" width="1080" height="2092" loading="lazy" decoding="async">
+        <figcaption>Accounts</figcaption>
+      </figure>
+      <div class="shot-body">
+        <h3>Your accounts, in the order you want them</h3>
+        <p>
+          Everything you add is listed here with its limit. Reorder with the arrows,
+          since that order is the one the Dashboard and the pickers use. Deactivating a
+          card keeps all its history but stops it appearing when you add something new,
+          which is what you want for a card you have closed.
+        </p>
+      </div>
+    </div>
+
+    <div class="shot-pair flip">
+      <figure class="shot-figure">
+        <img src="screenshots/03-limit-group.png" alt="The Limit groups section showing Everyday cards with a shared limit of 30,000,000 across two cards" width="1080" height="2092" loading="lazy" decoding="async">
+        <figcaption>Limit groups</figcaption>
+      </figure>
+      <div class="shot-body">
+        <h3>When two cards share one limit</h3>
+        <p>
+          Some banks issue several cards that draw on a single credit line. Adding them
+          up would tell you that you have far more room than you do. A limit group
+          holds the real shared ceiling, and availability is then reported for the
+          group rather than for each card.
+        </p>
+        <p>
+          In the example, two cards with limits of 25 and 15 million share a ceiling of
+          30 million, so the group is what gets tracked.
+        </p>
+      </div>
+    </div>
+
+    <div class="shot-pair">
+      <figure class="shot-figure">
+        <img src="screenshots/14-rules.png" alt="The Rules page showing a bonus rule for Aurora Visa with a target of 10 usages and a minimum amount" width="1080" height="2092" loading="lazy" decoding="async">
+        <figcaption>Bonus rules</figcaption>
+      </figure>
+      <div class="shot-body">
+        <h3>Track a card's perk without counting by hand</h3>
+        <p>
+          Many cards give something back for using them a set number of times, or for
+          spending past a threshold, within each statement period. A bonus rule
+          describes that, and the Dashboard then shows how close you are.
+        </p>
+        <ul>
+          <li><strong>Count</strong> mode counts qualifying purchases; <strong>Total amount</strong> mode adds them up.</li>
+          <li>A <strong>minimum per-usage amount</strong> stops small purchases from counting.</li>
+          <li><strong>Reset day</strong> is the day of the month the count starts over, matching your statement.</li>
+          <li>Fees and refunded purchases can be excluded, so the count matches what the bank will actually credit.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="shot-pair flip">
+      <figure class="shot-figure">
+        <img src="screenshots/13-settings.png" alt="The Settings screen showing current money set to 14,000,000 as of a date" width="1080" height="2092" loading="lazy" decoding="async">
+        <figcaption>Current money</figcaption>
+      </figure>
+      <div class="shot-body">
+        <h3>Tell it how much money you have right now</h3>
+        <p>
+          This is the one figure Sisaldo cannot work out for itself: what is in your
+          wallet and your bank at this moment. Set it, and everything about what you
+          have left is calculated from there.
+        </p>
+        <p>
+          You do not need to keep it updated constantly. Set it again whenever it has
+          drifted, typically after payday, and the app applies everything recorded
+          since on top of it.
+        </p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<section class="band wrap reveal">
+  <p class="eyebrow">Day to day</p>
+  <h2>Add a row, read the top of the Dashboard, get on with your life.</h2>
+
+  <div class="guide">
+
+    <div class="shot-pair">
+      <figure class="shot-figure">
+        <img src="screenshots/04-dashboard.png" alt="The Dashboard showing Today, Left Over of 4,279,000 and card availability" width="1080" height="2092" loading="lazy" decoding="async">
+        <figcaption>Dashboard</figcaption>
+      </figure>
+      <div class="shot-body">
+        <h3>Left Over is the number that matters</h3>
+        <p>
+          It is your current money, plus what people owe you, minus everything you owe
+          across every card, including things you have planned but not yet been charged
+          for. The working is printed underneath it so you can see where it came from.
+        </p>
+        <p>
+          <strong>Today</strong> is what you have spent since midnight.
+          <strong>Card availability</strong> shows the room left on each card or shared
+          group, and only counts charges that have actually happened.
+        </p>
+      </div>
+    </div>
+
+    <div class="shot-pair flip">
+      <figure class="shot-figure">
+        <img src="screenshots/05-bonus-progress.png" alt="Bonus progress showing five of ten filled dots, and an Owed to you list totalling 900,000" width="1080" height="2092" loading="lazy" decoding="async">
+        <figcaption>Progress and who owes you</figcaption>
+      </figure>
+      <div class="shot-body">
+        <h3>Perk progress, and money you have lent</h3>
+        <p>
+          Each bonus rule gets a row of dots and a count, so you can see at a glance
+          whether a perk is still worth chasing this month.
+        </p>
+        <p>
+          <strong>Owed to you</strong> gathers anything you paid on someone else's
+          behalf, grouped by person. It is counted in Left Over, because it is money
+          you expect back. Mark one as settled from the transaction itself once they
+          have paid you.
+        </p>
+      </div>
+    </div>
+
+    <div class="shot-pair">
+      <figure class="shot-figure">
+        <img src="screenshots/09-add-transaction.png" alt="The New transaction screen with amount, account picker, description, kind and date" width="1080" height="2092" loading="lazy" decoding="async">
+        <figcaption>New transaction</figcaption>
+      </figure>
+      <div class="shot-body">
+        <h3>Adding something</h3>
+        <p>
+          Amount, which account, and what it was for. That is the whole required set;
+          everything else has a sensible default.
+        </p>
+        <p>
+          <strong>Kind</strong> distinguishes a purchase from a payment to the card, a
+          refund, a cashback, or something you paid on behalf of someone else. Getting
+          the kind right is what lets the app tell "I owe less now" apart from "I spent
+          less".
+        </p>
+        <p>
+          For a purchase in another currency, set the currency and the rate you were
+          charged at, and the rupiah figure is worked out and kept.
+        </p>
+      </div>
+    </div>
+
+    <div class="shot-pair flip">
+      <figure class="shot-figure">
+        <img src="screenshots/10-quick-edit.png" alt="A transaction opened in a bottom sheet, with amount, account, description, date toggle and kind" width="1080" height="2092" loading="lazy" decoding="async">
+        <figcaption>Quick edit</figcaption>
+      </figure>
+      <div class="shot-body">
+        <h3>Fixing one that is already there</h3>
+        <p>
+          Tapping any row in the Ledger opens it in a sheet you can correct in place,
+          without leaving the list. Change the amount, move it to another card, or
+          delete it.
+        </p>
+        <p>
+          The <strong>Has a date / No date</strong> toggle here is the most consequential
+          control in the app. The next section explains exactly what it changes.
+        </p>
+      </div>
+    </div>
+
+    <div class="shot-pair">
+      <figure class="shot-figure">
+        <img src="screenshots/06-ledger.png" alt="The Ledger showing this month's transactions with debit and credit totals at the bottom" width="1080" height="2092" loading="lazy" decoding="async">
+        <figcaption>Ledger</figcaption>
+      </figure>
+      <div class="shot-body">
+        <h3>Everything, newest first</h3>
+        <p>
+          The Ledger opens on the current month, because that is almost always what you
+          want, and says how many of your total entries it is showing. Planned entries
+          sit at the top marked <em>Pending</em>, since they have no date to sort by.
+        </p>
+        <p>
+          The <strong>Debit</strong> and <strong>Credit</strong> totals at the bottom
+          are for exactly what is on screen, so they respond to whatever you have
+          filtered or searched.
+        </p>
+      </div>
+    </div>
+
+    <div class="shot-pair flip">
+      <figure class="shot-figure">
+        <img src="screenshots/07-ledger-filters.png" alt="The Ledger with filters open, showing account, kind, status and date range controls" width="1080" height="2092" loading="lazy" decoding="async">
+        <figcaption>Filters</figcaption>
+      </figure>
+      <div class="shot-body">
+        <h3>Narrowing it down</h3>
+        <p>
+          Filter by account, by kind, or by whether an entry is still pending, and set
+          a date range to look at any period rather than this month. Search matches the
+          description.
+        </p>
+        <p>
+          Because the totals follow the filter, this doubles as a quick way to answer
+          "how much did this card cost me in May".
+        </p>
+      </div>
+    </div>
+
+    <div class="shot-pair">
+      <figure class="shot-figure">
+        <img src="screenshots/08-cards.png" alt="The Cards screen showing owed all-time, bonus progress and a reconciliation note field per card" width="1080" height="2092" loading="lazy" decoding="async">
+        <figcaption>Cards</figcaption>
+      </figure>
+      <div class="shot-body">
+        <h3>One card at a time</h3>
+        <p>
+          Per card: what it owes all-time, its progress toward its perk, and a
+          <strong>reconciliation note</strong>. That last one is a free-text field for
+          what your bank app said and when, so the next time the app and the statement
+          disagree you know when they last agreed.
+        </p>
+      </div>
+    </div>
+
+    <div class="shot-pair flip">
+      <figure class="shot-figure">
+        <img src="screenshots/16-payees.png" alt="The Payees page listing two people with the amounts they owe" width="1080" height="2092" loading="lazy" decoding="async">
+        <figcaption>Payees</figcaption>
+      </figure>
+      <div class="shot-body">
+        <h3>People, not just amounts</h3>
+        <p>
+          A payee is a name to attach to something you paid for someone else, so
+          "Owed to you" can group by person rather than showing a list of unrelated
+          entries. You can create one straight from the transaction form; this page is
+          for renaming and tidying up.
+        </p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<section class="band wrap reveal">
+  <p class="eyebrow">How the numbers work</p>
+  <h2>One rule explains almost every figure in the app.</h2>
+  <div class="prose" style="margin-top:1.25rem">
+    <p>
+      A transaction either has a date or it does not, and that single distinction
+      decides which totals it is allowed to affect. An entry with no date is a plan:
+      money you have committed to, that no card has been charged for yet.
+    </p>
+  </div>
+
+  <div class="split">
+    <div class="split-card">
+      <p class="split-tag">Has a date</p>
+      <h3>It happened</h3>
+      <p>The card has been charged, or the money has moved. It counts everywhere.</p>
+      <ul class="feeds">
+        <li><span class="yes">counts</span><span>toward what you owe</span></li>
+        <li><span class="yes">counts</span><span>against your card's available room</span></li>
+        <li><span class="yes">counts</span><span>toward a bonus rule</span></li>
+        <li><span class="yes">counts</span><span>in Left Over</span></li>
+      </ul>
+    </div>
+    <div class="split-card is-planned">
+      <p class="split-tag">No date</p>
+      <h3>It is a plan</h3>
+      <p>You have committed the money, but nothing has reached the card yet.</p>
+      <ul class="feeds">
+        <li><span class="yes">counts</span><span>toward what you owe</span></li>
+        <li><span class="no">no effect</span><span>on your card's available room</span></li>
+        <li><span class="no">no effect</span><span>on a bonus rule</span></li>
+        <li><span class="yes">counts</span><span>in Left Over</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="prose" style="margin-top:2.5rem">
+    <h3>Why availability and what-you-owe disagree</h3>
+    <p>
+      They are answering different questions. Your available credit is a fact about the
+      card, so only real charges reduce it. What you owe is a fact about your money, and
+      a bill you have already decided to pay is owed whether or not it has landed. Both
+      figures are correct; expecting them to match is the mistake.
+    </p>
+
+    <h3>Cash moves no figure at all</h3>
+    <p>
+      Cash accounts always report zero owed, and a cash entry does not change your
+      current money either. That sounds wrong until you remember where current money
+      comes from: you type it in by looking at your wallet, and your wallet already
+      reflects the cash you spent. Applying those entries again would subtract the same
+      rupiah twice. Cash is tracked so you can see where it went, not to move the total.
+    </p>
+    <p>
+      One consequence worth knowing: cash you lent someone still appears under "Owed to
+      you", but is left out of the amount added back into Left Over, for the same
+      reason.
+    </p>
+
+    <h3>Nothing is ever stored as a total</h3>
+    <p>
+      Every balance, every availability figure and every rule count is recalculated from
+      your transactions each time it is shown. None of them is saved anywhere. That is
+      slightly more work for the app and the reason it cannot quietly drift out of
+      agreement with itself, which is exactly what the spreadsheets it replaced did.
+    </p>
+  </div>
+</section>
+
+<section class="band wrap reveal">
+  <p class="eyebrow">Backup and sync</p>
+  <h2>Your data is yours, and it can leave whenever you want.</h2>
+
+  <div class="guide">
+    <div class="shot-pair">
+      <figure class="shot-figure">
+        <img src="screenshots/11-backup-and-sync.png" alt="System settings showing Google Drive sync and Backup export and import buttons" width="1080" height="2092" loading="lazy" decoding="async">
+        <figcaption>Backup and Drive sync</figcaption>
+      </figure>
+      <div class="shot-body">
+        <h3>Export a file, or sync to your own Drive</h3>
+        <p>
+          <strong>Export backup</strong> writes everything to a single file you control,
+          ready for Drive, email, or wherever you keep things.
+          <strong>Import backup</strong> reads one back.
+        </p>
+        <p>
+          Importing <em>merges</em>, it does not replace. Importing the same file twice
+          changes nothing, and importing a file from another phone combines the two
+          rather than one overwriting the other.
+        </p>
+        <p>
+          <strong>Google Drive sync</strong> is optional and off until you connect it. It
+          uses a hidden folder that only this app can see, so it cannot read anything
+          else in your Drive, and the sign-in token stays in the device's keychain.
+        </p>
+      </div>
+    </div>
+
+    <div class="shot-pair flip">
+      <figure class="shot-figure">
+        <img src="screenshots/12-import-backup.png" alt="A dialog asking to confirm importing a backup of 49 entries, explaining that it merges rather than overwrites" width="1080" height="2092" loading="lazy" decoding="async">
+        <figcaption>Importing</figcaption>
+      </figure>
+      <div class="shot-body">
+        <h3>It tells you what it is about to do</h3>
+        <p>
+          Before importing, the app says how many entries the file holds, how many are
+          new to this device, and how many records they touch. Nothing happens until you
+          confirm.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band wrap reveal">
+  <p class="eyebrow">Updates</p>
+  <h2>Two ways a change reaches your phone.</h2>
+  <p class="lede prose" style="margin-top:1rem">
+    They are not interchangeable, and Settings shows both under one heading so you never
+    have to work out which one you need.
+  </p>
+
+  <div class="paths">
+    <div class="path">
+      <p class="eyebrow">The everyday one</p>
+      <h3>App updates</h3>
+      <p>
+        Screens, wording, and the calculations themselves can be updated without
+        reinstalling anything. These arrive quietly in the background and wait for you.
+      </p>
+      <dl>
+        <dt>Arrives</dt><dd>On its own, in the background</dd>
+        <dt>You do</dt><dd>Tap Restart to update, when it suits you</dd>
+        <dt>Costs</dt><dd>Nothing, and it never interrupts you</dd>
+      </dl>
+    </div>
+    <div class="path">
+      <p class="eyebrow">The occasional one</p>
+      <h3>Full app version</h3>
+      <p>
+        Anything needing a new permission or a new underlying library ships as a whole
+        new APK. Settings can find it, download it, and hand it to Android to install.
+      </p>
+      <dl>
+        <dt>Arrives</dt><dd>When you check, or from this page</dd>
+        <dt>You do</dt><dd>Tap through the download and the install</dd>
+        <dt>Costs</dt><dd>A full download, around 100 MB</dd>
+      </dl>
+    </div>
+  </div>
+
+  <div class="callout" style="border-color: var(--rule); background: transparent;">
+    <h3>One thing that surprises people</h3>
+    <p>
+      App updates only reach installs of the exact same full version. When a new full
+      version comes out, existing installs stop receiving app updates until that
+      version is installed too. So if Settings says you are up to date on app updates,
+      it is still worth installing a new full version promptly when one appears.
+    </p>
+  </div>
+</section>
+
+<footer class="foot wrap">
+  <p>
+    Sisaldo is a personal app, published so its owner's own devices can keep themselves
+    up to date. It carries no warranty and nobody is on call for it. The source is not
+    public; this repository holds the releases and this page.
+  </p>
+  <p>
+    <a href="https://github.com/dickofn/sisaldo-app/releases">All releases</a> &middot;
+    <a href="https://github.com/dickofn/sisaldo-app/releases/latest/download/sisaldo.apk">Download the newest APK</a>
+  </p>
+  <p class="note">
+    Screenshots show invented accounts and invented amounts, on a folded Pixel Fold.
+  </p>
+</footer>
+
+<script>
+// The reveal itself. The guard in <head> already decided whether anything is
+// hidden at all, so this only has to reveal what that opted in to.
+(function () {
+  if (!document.documentElement.classList.contains('js-reveal')) return;
+
+  var targets = document.querySelectorAll('.reveal');
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      if (!entry.isIntersecting) return;
+      entry.target.classList.add('seen');
+      io.unobserve(entry.target);
+    });
+  }, { rootMargin: '0px 0px -12% 0px' });
+
+  targets.forEach(function (el) { io.observe(el); });
+})();
+</script>
+
+</body>
+</html>
