@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sisaldo privacy policy</title>
+<meta name="description" content="What Sisaldo, a personal offline spending tracker for Android, does and does not do with your data.">
+<meta name="color-scheme" content="light dark">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Same palette and faces as index.html, on purpose: this page belongs to the
+   same product. Kept self-contained so it can be linked from a consent screen
+   without depending on the guide. */
+:root {
+  --paper: #FAFAF7;
+  --paper-sunk: #F2F1EC;
+  --ink: #16181D;
+  --ink-soft: #4E545F;
+  --ink-faint: #858A94;
+  --rule: #E4E2DC;
+  --aurora: #4F7CFF;
+  --sans: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #101216;
+    --paper-sunk: #14171C;
+    --ink: #F2F1EE;
+    --ink-soft: #B0B6C0;
+    --ink-faint: #7C828D;
+    --rule: #2A2E36;
+  }
+}
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 1rem;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+main { max-width: 46rem; margin-inline: auto; padding: clamp(1.5rem, 4vw, 3rem) clamp(1rem, 3vw, 2rem) 4rem; }
+h1, h2 { line-height: 1.2; letter-spacing: -0.015em; margin: 0; text-wrap: balance; }
+h1 { font-size: clamp(1.9rem, 1.5rem + 1.6vw, 2.6rem); font-weight: 600; }
+h2 { font-size: 1.25rem; font-weight: 600; margin-top: 2.2rem; }
+p { margin: 0.8em 0 0; }
+.meta { color: var(--ink-faint); font-size: 0.875rem; margin-top: 0.4rem; }
+.crumb { font-size: 0.875rem; color: var(--ink-soft); margin-bottom: 1.5rem; }
+a { color: var(--aurora); }
+code { font-family: var(--mono); font-size: 0.92em; background: var(--paper-sunk); padding: 0.1em 0.35em; border-radius: 4px; }
+table { width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: 0.95rem; }
+th, td { text-align: left; vertical-align: top; padding: 0.55rem 0.6rem; border-bottom: 1px solid var(--rule); }
+th { font-weight: 500; color: var(--ink-soft); white-space: nowrap; }
+.table-wrap { overflow-x: auto; }
+ul { padding-left: 1.2rem; margin: 0.6em 0 0; }
+li + li { margin-top: 0.3em; }
+.foot { border-top: 1px solid var(--rule); margin-top: 3rem; padding-top: 1.5rem; font-size: 0.875rem; color: var(--ink-faint); }
+.foot a { color: var(--ink-soft); }
+</style>
+</head>
+<body>
+<main>
+  <p class="crumb"><a href="./">Sisaldo</a> &middot; Privacy policy</p>
+  <h1>Privacy policy</h1>
+  <p class="meta">Applies to the Sisaldo Android app. Last updated 22 September 2026.</p>
+
+  <p>
+    Sisaldo is a personal spending and credit-card tracker. It has no backend and no
+    online database: everything you enter lives in a database file on your own device.
+    The developer runs no server, receives no data from the app, and has no way to see
+    what you record.
+  </p>
+
+  <h2>What the app stores, and where</h2>
+  <p>
+    Accounts, transactions, limits, budgets, rules and settings are written to a local
+    SQLite file inside the app's private storage on the device. Nothing is sent
+    anywhere by default. Uninstalling the app deletes that file.
+  </p>
+
+  <h2>Google Drive sync, only if you turn it on</h2>
+  <p>
+    You can connect your own Google account so the app keeps a copy of its data in
+    Google Drive and can merge it with another device of yours. When you do, the app
+    asks Google for exactly one permission:
+  </p>
+  <p><code>https://www.googleapis.com/auth/drive.appdata</code></p>
+  <p>
+    That scope covers only a hidden, app-specific folder in your Drive. The app cannot
+    see, list or change any other file in your Drive, and no other app can see that
+    folder. What it writes there is its own change log and periodic snapshots of the
+    data described above, nothing else.
+  </p>
+  <p>
+    The sign-in happens between your device and Google directly. The resulting tokens
+    are kept in the device's secure store and are never sent to the developer. You can
+    disconnect at any time from the app's Settings, which deletes the tokens on the
+    device, and you can remove the app's Drive access and its hidden folder from your
+    Google account at <a href="https://myaccount.google.com/permissions">myaccount.google.com/permissions</a>.
+  </p>
+
+  <h2>Notifications and SMS, only if you grant them</h2>
+  <p>
+    On request, the app can read notifications and incoming SMS on the device in order
+    to suggest a transaction when a bank or wallet reports a purchase. The matching
+    runs entirely on the device. The message text is not stored, not synced and not
+    sent anywhere; only the transaction you choose to save is kept, in the local
+    database above. Both features are off until you grant them in Android's own
+    settings, and you can revoke them there.
+  </p>
+
+  <h2>Network requests the app makes on its own</h2>
+  <div class="table-wrap">
+  <table>
+    <tr><th>Request</th><th>To</th><th>What it carries</th></tr>
+    <tr>
+      <td>Exchange-rate table</td>
+      <td>A public CDN file (<code>currency-api</code> on jsDelivr, with a Cloudflare Pages mirror)</td>
+      <td>Nothing about you. A fetch of a public, dated JSON file.</td>
+    </tr>
+    <tr>
+      <td>Update check</td>
+      <td>GitHub, the public releases of <code>dickofn/sisaldo-app</code></td>
+      <td>Nothing about you. An anonymous request for the newest version number, and the APK if you choose to download it.</td>
+    </tr>
+    <tr>
+      <td>Drive sync</td>
+      <td>Google Drive, your own account</td>
+      <td>Your app data, to the hidden folder described above, and only after you connect.</td>
+    </tr>
+  </table>
+  </div>
+
+  <h2>What the app does not do</h2>
+  <ul>
+    <li>No analytics, no crash reporting, no advertising, no tracking of any kind.</li>
+    <li>No account with the developer. There is nothing to sign up for.</li>
+    <li>No sale or sharing of data. The developer never holds any.</li>
+  </ul>
+
+  <h2>Deleting your data</h2>
+  <p>
+    On the device: uninstall the app, or use Settings inside the app to clear its
+    data. In Google Drive: remove Sisaldo at the account permissions page linked above,
+    which also deletes the hidden folder.
+  </p>
+
+  <h2>Contact</h2>
+  <p>
+    Questions about this policy go to the developer at
+    <a href="mailto:dickofn@gmail.com">dickofn@gmail.com</a>.
+  </p>
+
+  <footer class="foot">
+    <p>Sisaldo is a personal app, published so its owner's own devices can keep themselves up to date. <a href="./">Back to the documentation</a>.</p>
+  </footer>
+</main>
+</body>
+</html>
